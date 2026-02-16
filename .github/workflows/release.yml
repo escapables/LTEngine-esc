@@ -1,0 +1,129 @@
+name: Release Build
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Verify binary exists
+        run: |
+          test -f target/release/ltengine
+          file target/release/ltengine
+
+      - name: Run smoke test
+        run: |
+          ./target/release/ltengine --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: ltengine-linux-amd64
+          path: target/release/ltengine
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          files: target/release/ltengine
+          name: ltengine-linux-amd64
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          brew install cmake
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Verify binary exists
+        run: |
+          test -f target/release/ltengine
+          file target/release/ltengine
+
+      - name: Run smoke test
+        run: |
+          ./target/release/ltengine --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: ltengine-macos-amd64
+          path: target/release/ltengine
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          files: target/release/ltengine
+          name: ltengine-macos-amd64
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          choco install cmake
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Verify binary exists
+        run: |
+          Test-Path target/release/ltengine.exe
+
+      - name: Run smoke test
+        run: |
+          ./target/release/ltengine.exe --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: ltengine-windows-amd64.exe
+          path: target/release/ltengine.exe
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          files: target/release/ltengine.exe
+          name: ltengine-windows-amd64.exe
