@@ -9,9 +9,51 @@ target/
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
-# RustRover
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# JetBrains IDEs
+.idea/
+
+# --- Local development artifacts ---
+
+# Cargo lock file (for libraries, this can be committed; for binaries, should be committed)
+# Keeping Cargo.lock for this binary project
+
+# Code coverage
+coverage/
+
+# Node.js (for scripts)
+node_modules/
+.pnpm-store/
+
+# Local config files
+config.yaml
+config.yml
+config.ini
+
+# Downloaded models or data files
+*.gguf
+/data/
+models/
+
+# Log files
+*.log
+error.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Archive files
+*.zip
+*.tar.gz
+*.tar
+
+# Temporary files
+*.tmp
+*.temp
+
+# --- Project-specific local files ---
+# These are maintained locally per agent workflow
+/AGENTS.md
+docs/TODO.md
+docs/HANDOFF.md
+docs/PRIMARY_TODO.md
