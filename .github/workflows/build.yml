@@ -1,7 +1,15 @@
+# NOTE: CI is intentionally disabled for normal pushes.
+# Builds and tests are only run on release events.
+# See .github/workflows/release.yml for the release workflow.
+
 name: Build and Test
 
 on:
-  push:
+  # Intentionally empty - this workflow is disabled.
+  # CI only runs on releases per project policy.
+  # To enable for testing, temporarily uncomment below:
+  # push:
+  #   branches: [main]
 
 jobs:
   build:
