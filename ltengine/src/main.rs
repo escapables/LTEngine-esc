@@ -27,7 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 #[command(version, about, long_about = None)]
 struct Args {
     /// Hostname to bind to
-    #[arg(long, default_value = "0.0.0.0")]
+    #[arg(long, default_value = "127.0.0.1")]
     host: String,
 
     /// Port to bind to
