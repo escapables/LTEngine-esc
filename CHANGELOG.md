@@ -10,3 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Changed default server host binding from `0.0.0.0` to `127.0.0.1` for Windows compatibility.
+
+### Added
+
+- CI release workflow (`.github/workflows/release.yml`) for multi-platform builds (Linux, macOS, Windows).
+- Documentation system: `docs/README.md`, `ROADMAP.md`, `PORTABLE_APP.md`, `STYLE.md`, `RELEASING.md`, `WORKFLOW.md`, `linux-dev-setup.md`.
+- `scripts/docs-list.mjs` for documentation discovery.
+- `bin/validate-docs` and `bin/test-gate` for doc validation and testing.
+
+### Changed
+
+- Disabled CI on normal pushes; builds now only run on release publish events.
+- Updated `.gitignore` with project-relevant patterns (Rust artifacts, IDE configs, local docs).
+
+### Documentation
+
+- Added placeholder docs for non-applicable features (elevation, scripting, mislabel-inventory).
+- Added `CODE_OF_CONDUCT.md` with front matter for validation compliance.
+- Updated `PORTABLE_APP.md` to reflect actual host binding behavior.
