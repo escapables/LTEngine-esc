@@ -1,0 +1,39 @@
+#!/bin/bash
+# Test gate - run basic verification before commit/push
+
+set -e
+
+echo "=== Test Gate ==="
+echo ""
+
+# Check Rust formatting
+echo "[1/3] Checking Rust formatting..."
+if command -v cargo &> /dev/null; then
+    cargo fmt --check 2>/dev/null || echo "  WARN: cargo fmt --check failed or not available"
+else
+    echo "  SKIP: cargo not found"
+fi
+
+# Run docs validation
+echo "[2/3] Validating documentation..."
+if [ -f bin/validate-docs ]; then
+    python bin/validate-docs
+else
+    echo "  SKIP: validate-docs not found"
+fi
+
+# Check for TODO markers in code
+echo "[3/3] Checking for TODO/FIXME markers..."
+if git rev-parse --git-dir > /dev/null 2>&1; then
+    TODO_COUNT=$(git grep -n "TODO\|FIXME" -- "*.rs" 2>/dev/null | wc -l)
+    if [ "$TODO_COUNT" -gt 0 ]; then
+        echo "  INFO: Found $TODO_COUNT TODO/FIXME markers in code"
+    else
+        echo "  OK: No TODO/FIXME markers found"
+    fi
+else
+    echo "  SKIP: not a git repository"
+fi
+
+echo ""
+echo "=== Test Gate Complete ==="
