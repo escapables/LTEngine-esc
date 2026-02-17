@@ -29,6 +29,6 @@ Thumbs.db
 
 # Agent-specific docs (local only)
 /AGENTS.md
-docs/TODO.md
-docs/HANDOFF.md
-docs/PRIMARY_TODO.md
+
+# Kilo Code project-specific rules/workflows
+.kilocode/
