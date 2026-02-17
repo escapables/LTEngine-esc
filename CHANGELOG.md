@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disabled CI on normal pushes; builds now only run on release publish events.
 - Updated `.gitignore` with project-relevant patterns (Rust artifacts, IDE configs, local docs).
 - Updated dependencies: actix-web 4.12, clap 4.5, serde 1.0.228, serde_json 1.0.149, anyhow 1.0.101.
+- Removed `build.yml` workflow that was incorrectly triggering on pushes despite being "disabled".
 
 ### Documentation
 
