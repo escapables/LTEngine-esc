@@ -1,36 +1,37 @@
+use anyhow::{Context, Result};
+use llama_cpp_2::context::LlamaContext;
 use llama_cpp_2::context::params::LlamaContextParams;
 use llama_cpp_2::llama_backend::LlamaBackend;
-use llama_cpp_2::model::params::LlamaModelParams;
-use llama_cpp_2::model::{LlamaModel, LlamaChatMessage};
-use llama_cpp_2::token::LlamaToken;
-use llama_cpp_2::context::LlamaContext;
-use llama_cpp_2::model::{AddBos, Special};
 use llama_cpp_2::llama_batch::LlamaBatch;
+use llama_cpp_2::model::params::LlamaModelParams;
+use llama_cpp_2::model::{AddBos, Special};
+use llama_cpp_2::model::{LlamaChatMessage, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
-use llama_cpp_2::{send_logs_to_tracing, LogOptions};
+use llama_cpp_2::token::LlamaToken;
+use llama_cpp_2::{LogOptions, send_logs_to_tracing};
 use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use anyhow::{Result, Context};
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct LLM {
     backend: LlamaBackend,
     model: LlamaModel,
-    prompt_lock: Mutex<bool>
+    prompt_lock: Mutex<bool>,
 }
 
-pub struct LLMContext<'a>{
+pub struct LLMContext<'a> {
     llm: &'a LLM,
     ctx: LlamaContext<'a>,
-    ctx_size: i32
+    ctx_size: i32,
 }
 
 impl LLM {
     pub fn new(model_path: PathBuf, cpu: bool, verbose: bool) -> Result<Self> {
-        if !verbose{
+        if !verbose {
             send_logs_to_tracing(LogOptions::default().with_logs_enabled(false));
         }
-        
+
         let backend = LlamaBackend::init()?;
 
         let model_params = {
@@ -43,38 +44,47 @@ impl LLM {
 
         let model = LlamaModel::load_from_file(&backend, model_path, &model_params)
             .with_context(|| "Unable to load model")?;
-        
-        Ok(LLM { backend, model, prompt_lock: Mutex::new(true) })
+
+        Ok(LLM {
+            backend,
+            model,
+            prompt_lock: Mutex::new(true),
+        })
     }
 
-    pub fn create_context(&self, ctx_size: i32) -> Result<LLMContext>{
-        let ctx_params =
-            LlamaContextParams::default().with_n_ctx(Some(NonZeroU32::new(ctx_size as u32).unwrap()));
+    pub fn create_context(&self, ctx_size: i32) -> Result<LLMContext<'_>> {
+        let ctx_params = LlamaContextParams::default()
+            .with_n_ctx(Some(NonZeroU32::new(ctx_size as u32).unwrap()));
 
         // Use all threads
-        // ctx_params = ctx_params.with_n_threads(threads);
-        // ctx_params = ctx_params.with_n_threads_batch(threads_batch);
 
-        let ctx = self.model
+        let ctx = self
+            .model
             .new_context(&self.backend, ctx_params)
             .with_context(|| "Unable to create the llama context")?;
-        Ok(LLMContext{ llm: self, ctx, ctx_size })
+        Ok(LLMContext {
+            llm: self,
+            ctx,
+            ctx_size,
+        })
     }
 
-    pub fn run_prompt(&self, system: String, user: String) -> Result<String>{
+    pub fn run_prompt(&self, system: String, user: String) -> Result<String> {
         let tmpl = self.model.chat_template(None)?;
-        let llm_input = self.model.apply_chat_template(&tmpl, &[
-            LlamaChatMessage::new("system".to_string(), system)?,
-            LlamaChatMessage::new("user".to_string(), user)?
-        ], true)?;
+        let llm_input = self.model.apply_chat_template(
+            &tmpl,
+            &[
+                LlamaChatMessage::new("system".to_string(), system)?,
+                LlamaChatMessage::new("user".to_string(), user)?,
+            ],
+            true,
+        )?;
 
-        let tokens_list = self.model
-            .str_to_token(&llm_input
-            , AddBos::Always)
+        let tokens_list = self
+            .model
+            .str_to_token(&llm_input, AddBos::Always)
             .with_context(|| format!("Failed to tokenize {llm_input}"))?;
-        // for token in &tokens_list {
-        //     eprint!("{} {} | ", self.model.token_to_str(*token, Special::Tokenize)?, token);
-        // }
+
         let ctx_size: i32 = tokens_list.len() as i32 * 3;
         let mut ctx = self.create_context(ctx_size)?;
         {
@@ -89,10 +99,8 @@ impl LLM {
     }
 }
 
-impl LLMContext<'_>{
-    pub fn process(&mut self, tokens_list: Vec<LlamaToken>) -> Result<String>{
-        // let ctx_size: i32 = tokens_list.len() as i32 * 3;
-        
+impl LLMContext<'_> {
+    pub fn process(&mut self, tokens_list: Vec<LlamaToken>) -> Result<String> {
         // We use this object to submit token data for decoding
         let mut batch = LlamaBatch::new(self.ctx_size.try_into()?, 1);
 
@@ -103,7 +111,8 @@ impl LLMContext<'_>{
             batch.add(token, i, &[0], is_last)?;
         }
 
-        self.ctx.decode(&mut batch)
+        self.ctx
+            .decode(&mut batch)
             .with_context(|| "llama_decode() failed")?;
 
         let mut n_cur = batch.n_tokens();
@@ -120,13 +129,12 @@ impl LLMContext<'_>{
             LlamaSampler::min_p(0.05, 0),
             LlamaSampler::xtc(0.0, 0.1, 0, 42),
             LlamaSampler::temp_ext(0.0, 0.0, 1.0),
-            LlamaSampler::dist(42)
+            LlamaSampler::dist(42),
         ]);
 
         let mut output = String::new();
 
         while n_cur <= self.ctx_size {
-
             // sample the next token
             {
                 let token = sampler.sample(&self.ctx, batch.n_tokens() - 1);
@@ -137,11 +145,12 @@ impl LLMContext<'_>{
                 if self.llm.model.is_eog_token(token) {
                     break;
                 }
-                    
+
                 let output_bytes = self.llm.model.token_to_bytes(token, Special::Tokenize)?;
                 // use `Decoder.decode_to_string()` to avoid the intermediate buffer
                 let mut output_string = String::with_capacity(32);
-                let _decode_result = decoder.decode_to_string(&output_bytes, &mut output_string, false);
+                let _decode_result =
+                    decoder.decode_to_string(&output_bytes, &mut output_string, false);
                 output.push_str(&output_string);
 
                 batch.clear();
@@ -150,7 +159,9 @@ impl LLMContext<'_>{
 
             n_cur += 1;
 
-            self.ctx.decode(&mut batch).with_context(|| "Failed to eval")?;
+            self.ctx
+                .decode(&mut batch)
+                .with_context(|| "Failed to eval")?;
         }
 
         Ok(output)

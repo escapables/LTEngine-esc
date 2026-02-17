@@ -17,6 +17,8 @@ encoding_rs = "0.8.35"
 [workspace.lints.rust]
 missing_docs = { level = "warn" }
 missing_debug_implementations = { level = "warn" }
+unpredictable_function_pointer_comparisons = { level = "allow" }
+mismatched_lifetime_syntaxes = { level = "allow" }
 
 [workspace.lints.clippy]
 pedantic = { level = "warn" }

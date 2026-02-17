@@ -62,7 +62,7 @@ Memory usage numbers are approximate.
 Request:
 
 ```javascript
-const res = await fetch("http://0.0.0.0:5050/translate", {
+const res = await fetch("http://127.0.0.1:5050/translate", {
   method: "POST",
   body: JSON.stringify({
     q: "Hello!",
@@ -83,14 +83,14 @@ Response:
 }
 ```
 
-List of language codes: https://0.0.0.0:5000/languages
+List of language codes: http://127.0.0.1:5050/languages
 
 ### Auto Detect Language
 
 Request:
 
 ```javascript
-const res = await fetch("http://0.0.0.0:5000/translate", {
+const res = await fetch("http://127.0.0.1:5050/translate", {
   method: "POST",
   body: JSON.stringify({
     q: "Ciao!",
@@ -145,7 +145,7 @@ You can use the LTEngine API using the following bindings:
  - [ ] Create comparative benchmarks between LTEngine and proprietary software.
  - [ ] Add support for command line inference (run `./ltengine translate` as a command line app separate from `./ltengine server`)
  - [ ] Make ltengine available as a library, possibly creating bindings for other languages like Python.
- - [ ] Automated builds / CI
+ - [x] Automated builds / CI
  - [ ] Your ideas? We welcome contributions.
 
 ## Contributing

@@ -53,7 +53,16 @@ The server currently supports:
   - Request: `{"q": "Hello", "source": "en", "target": "es"}`
   - Response: `{"translatedText": "¡Hola!"}`
   - Supports `source: "auto"` for auto-detection
+  - Returns `detectedLanguage` when source is "auto"
+- `POST /detect` - Detect language of text
+  - Request: `{"q": "Hello world"}`
+  - Response: `[{"language": "en", "confidence": 99}]`
 - `GET /languages` - List supported languages
+- `GET /frontend/settings` - Frontend configuration
+
+**Not implemented (return 501):**
+- `POST /translate_file` - Document translation
+- `POST /suggest` - Translation suggestions
 
 ## Model Configuration
 

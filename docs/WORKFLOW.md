@@ -22,3 +22,26 @@ Shared instructions already live elsewhere and are not duplicated here:
 - Keep `Completed` to short session deltas only (max `4` bullets).
 - Keep `Verification Run` concrete (command + result).
 - Keep `Next Actions` to `2-3` bullets with concrete commands or checks.
+
+## TODO Item Lifecycle
+
+When finishing a TODO item:
+- Mark `DONE` in the task title: `### 3. DONE Harden Security`
+- Mark each `Done when:` step as `DONE`: `- DONE Security hardened`
+- Do **not** renumber the list; preserve original numbering
+
+When adding a new TODO item:
+- Append to the current list with the next sequential number
+- Do **not** renumber existing items
+
+Format example:
+```markdown
+### 3. DONE Harden Security
+Task: Implement security hardening measures.
+Scope:
+- Review authentication flows
+- Add rate limiting
+Done when:
+- DONE Authentication reviewed
+- DONE Rate limiting implemented
+```

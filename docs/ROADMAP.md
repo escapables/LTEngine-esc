@@ -8,17 +8,17 @@ read_when:
 
 # Roadmap
 
-## Current Status (2026-02-16)
+## Current Status (2026-02-17)
 
-- Active development, no releases yet.
 - Core translation API functional with Gemma3 models.
 - Supports CPU, CUDA, Metal, and Vulkan backends.
+- PRIMARY_TODO modernization: 6 of 6 steps complete.
 
 ## Immediate Priority (Next Session)
 
 **BLOCKED until PRIMARY_TODO complete:** Codebase modernization is required before new features.
 
-1. ~~Implement CI release workflow for automated builds.~~ (Partially done - release.yml created)
+1. ~~Implement CI release workflow for automated builds.~~ (Done - release.yml created)
 2. Add `/translate_file` endpoint for document translation.
 3. Implement sentence splitting for longer texts.
 4. Add better language detection for short texts (port LexiLang to Rust).
@@ -34,7 +34,7 @@ read_when:
 
 ## In Progress / Planned
 
-- [ ] **PRIMARY_TODO:** Codebase cleanup and modernization (PRIORITY)
+- [x] **PRIMARY_TODO:** Codebase cleanup and modernization (DONE - 6/6 steps)
 - [ ] Remove mutex block limiting concurrent translation requests.
 - [ ] Cancel inference when HTTP connections are aborted.
 - [ ] Add `/translate_file` endpoint for document translation.
