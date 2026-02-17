@@ -7,12 +7,17 @@ members = [
 
 [workspace.dependencies]
 # core llama-cpp-2 deps
-thiserror = "1"
+thiserror = "2"
 tracing = "0.1"
 tracing-core = "0.1"
-bindgen = "0.69.5"
-cc = "1.2.26"
+bindgen = "0.72.1"
+cc = "1.2.54"
 encoding_rs = "0.8.35"
+
+# llama-cpp-2 dependencies
+hf-hub = { version = "0.4.3" }
+anyhow = "1.0.101"
+tracing-subscriber = { version = "0.3", features = ["json"] }
 
 [workspace.lints.rust]
 missing_docs = { level = "warn" }
