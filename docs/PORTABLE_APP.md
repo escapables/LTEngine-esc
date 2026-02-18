@@ -90,7 +90,7 @@ Supported model aliases:
 ## Build
 
 ```bash
-git clone https://github.com/LibreTranslate/LTEngine --recursive
+git clone https://github.com/escapables/LTEngine-esc.git --recursive
 cd LTEngine
 cargo build [--features cuda,vulkan,metal] --release
 ```

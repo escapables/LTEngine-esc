@@ -23,7 +23,7 @@ Optional for hardware acceleration:
 
 ```bash
 # Standard build
-git clone https://github.com/LibreTranslate/LTEngine --recursive
+git clone https://github.com/escapables/LTEngine-esc.git --recursive
 cd LTEngine
 cargo build --release
 
