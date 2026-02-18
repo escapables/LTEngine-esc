@@ -6,6 +6,11 @@ read_when:
   - Taking over from another agent.
 ---
 
+> **MAINTAINER-ONLY DOCUMENT**
+> This is an ephemeral internal document for active development session tracking.
+> It is temporary state and will be overwritten by the next work session.
+> End users and contributors should not rely on this document.
+
 # HANDOFF
 
 ## Session

@@ -61,7 +61,7 @@ git tag vX.Y.Z
 
 6. Push branch + tag (when approved):
 ```bash
-git push origin master
+git push origin main
 git push origin vX.Y.Z
 ```
 

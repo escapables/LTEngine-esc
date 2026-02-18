@@ -83,8 +83,8 @@ Models are specified via command line:
 
 Supported model aliases:
 - `gemma3-1b` - 1GB RAM / 2GB VRAM (testing only)
-- `gemma3-4b` - 4GB RAM / 4GB VRAM (default)
-- `gemma3-12b` - 8GB RAM / 10GB VRAM
+- `gemma3-4b` - 4GB RAM / 4GB VRAM
+- `gemma3-12b` - 8GB RAM / 10GB VRAM (default)
 - `gemma3-27b` - 16GB RAM / 18GB VRAM (best quality)
 
 ## Build

@@ -19,7 +19,7 @@ read_when:
 **BLOCKED until PRIMARY_TODO complete:** Codebase modernization is required before new features.
 
 1. ~~Implement CI release workflow for automated builds.~~ (Done - release.yml created)
-2. Add `/translate_file` endpoint for document translation.
+2. ~~Add `/translate_file` endpoint for document translation.~~ (Done - shipped in v0.2.0)
 3. Implement sentence splitting for longer texts.
 4. Add better language detection for short texts (port LexiLang to Rust).
 
@@ -37,7 +37,7 @@ read_when:
 - [x] **PRIMARY_TODO:** Codebase cleanup and modernization (DONE - 6/6 steps)
 - [ ] Remove mutex block limiting concurrent translation requests.
 - [ ] Cancel inference when HTTP connections are aborted.
-- [ ] Add `/translate_file` endpoint for document translation.
+- [x] Add `/translate_file` endpoint for document translation.
 - [ ] Sentence splitting for long text chunking.
 - [ ] Better language detection for short texts.
 - [ ] Test/add more LLM models beyond Gemma3.

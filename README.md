@@ -51,8 +51,8 @@ LTEngine supports any GGUF language model supported by [llama.cpp](https://githu
 | Model      | RAM Usage | GPU Usage | Notes                               | Default            |
 | ---------- | --------- | --------- | ----------------------------------- | ------------------ |
 | gemma3-1b  | 1G        | 2G        | Good for testing, poor translations |                    |
-| gemma3-4b  | 4G        | 4G        |                                     | :heavy_check_mark: |
-| gemma3-12b | 8G        | 10G       |                                     |                    |
+| gemma3-4b  | 4G        | 4G        |                                     |                    |
+| gemma3-12b | 8G        | 10G       |                                     | :heavy_check_mark: |
 | gemma3-27b | 16G       | 18G       | Best translation quality, slowest   |                    |
 
 Memory usage numbers are approximate.
@@ -138,7 +138,7 @@ You can use the LTEngine API using the following bindings:
 
  - [ ] Remove mutex block that currently limits the software to process one single translation request at a time due to a possible bug in llama.cpp. 
  - [ ] Cancel inference (stop generating tokens) when HTTP connections are aborted by clients. I'm unsure how this could done with actix-web.
- - [ ] Add support for `/translate_file` (ability to translate files).
+ - [x] Add support for `/translate_file` (ability to translate files).
  - [ ] Add support for sentence splitting. Currently text is sent to the LLM as-is, but longer texts (like documents) should be split into chunks, translated and merged back.
  - [ ] Better language detection for short texts (port [LexiLang](https://github.com/LibreTranslate/LexiLang) to Rust)
  - [ ] Test/add more LLM models aside from Gemma3
@@ -150,7 +150,7 @@ You can use the LTEngine API using the following bindings:
 
 ## Contributing
 
-We welcome contributions! Just open a pull request.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on pull requests, code style, and local quality gates.
 
 ## Credits
 

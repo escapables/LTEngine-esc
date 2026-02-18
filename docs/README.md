@@ -1,5 +1,5 @@
 ---
-summary: 'Index of project docs with recommended read order.'
+summary: 'Index of project docs with recommended read order by audience.'
 read_when:
   - Onboarding to this repository.
   - Looking for what to read first.
@@ -7,37 +7,60 @@ read_when:
 
 # Documentation Index
 
-## Read Order
+## By Audience
 
-1. `README.md` (this file)
-2. `docs/ROADMAP.md`
-3. `docs/PORTABLE_APP.md`
-4. `docs/RELEASING.md`
-5. `docs/WORKFLOW.md`
-6. `docs/HANDOFF.md`
-7. `docs/TODO.md`
-8. `docs/PRIMARY_TODO.md`
-9. `docs/linux-dev-setup.md`
-10. `docs/STYLE.md`
+### Users (End Users)
 
-## Project-specific docs
+Start here to understand and run LTEngine:
 
-- `docs/PORTABLE_APP.md`: Runtime contract, architecture, and API behavior for LTEngine.
-- `docs/ROADMAP.md`: Focused backlog and completed milestones.
-- `docs/HANDOFF.md`: Ephemeral session handoff state for cross-agent pickup.
-- `docs/TODO.md`: Lightweight execution checklist template for active work.
-- `docs/PRIMARY_TODO.md`: Template for large multi-step workstreams (codebase modernization).
-- `docs/WORKFLOW.md`: Pickup/handoff process and handoff quality expectations.
-- `docs/RELEASING.md`: Release checklist, changelog flow, and GitHub release guardrails.
+1. `README.md` - Project overview, quick start, API examples
+2. `docs/PORTABLE_APP.md` - Runtime contract, API surface, model configuration
+3. `docs/ROADMAP.md` - Current features and planned improvements
+4. `docs/linux-dev-setup.md` - Development/build setup
 
-## General/reference docs
+### Contributors (Developers)
 
-- `docs/linux-dev-setup.md`: Development toolchain and build setup requirements.
-- `docs/STYLE.md`: Rust style guide used by this project.
+Start here to contribute code:
 
-## Placeholder docs (not applicable)
+1. `README.md` - Project overview
+2. `CONTRIBUTING.md` - Contribution guidelines and PR workflow
+3. `docs/linux-dev-setup.md` - Development environment setup
+4. `.kilocode/rules/ARCHITECTURE.md` - Architecture contract and API details
+5. `docs/STYLE.md` - Rust coding conventions
+6. `docs/PORTABLE_APP.md` - Runtime behavior reference
 
-- `docs/elevation-setup.md`: Documentation placeholder - elevation data not applicable to LTEngine.
-- `docs/mislabel-inventory.md`: Documentation placeholder - transit route mislabels not applicable to LTEngine.
-- `docs/scripting.md`: Documentation placeholder - Lua scripting not applicable to LTEngine.
-- `docs/CODE_OF_CONDUCT.md`: Community guidelines.
+### Maintainers (Core Team)
+
+Internal process documentation:
+
+1. `docs/WORKFLOW.md` - Pickup/handoff process for agent continuity
+2. `docs/RELEASING.md` - Release checklist and tagging workflow
+3. `docs/HANDOFF.md` - Current session state (ephemeral)
+4. `docs/TODO.md` - Active task execution checklist
+5. `docs/PRIMARY_TODO.md` - Large multi-step workstream tracking
+6. `docs/CODE_OF_CONDUCT.md` - Community guidelines
+
+## Doc Responsibilities
+
+| Document | Owned By | Purpose |
+|----------|----------|---------|
+| `docs/PORTABLE_APP.md` | Repository | Source of truth for runtime contract and API behavior |
+| `.kilocode/rules/ARCHITECTURE.md` | Agent system | Architecture contract for AI agents |
+| `README.md` | Repository | User-facing overview and quick start |
+| `CONTRIBUTING.md` | Repository | Contributor guidelines |
+
+## Placeholder Docs (Not Applicable)
+
+These docs exist as placeholders but are not relevant to LTEngine:
+
+- `docs/elevation-setup.md` - Elevation data not applicable
+- `docs/mislabel-inventory.md` - Transit route mislabels not applicable
+- `docs/scripting.md` - Lua scripting not applicable
+
+## Internal Process Docs (Maintainer-Only)
+
+These are ephemeral/temporary docs for active development tracking:
+
+- `docs/HANDOFF.md` - Cross-agent session handoff state
+- `docs/TODO.md` - Current task execution checklist
+- `docs/PRIMARY_TODO.md` - Multi-step workstream template

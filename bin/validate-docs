@@ -81,6 +81,9 @@ def _has_heading(body: str) -> bool:
         stripped = line.strip()
         if not stripped:
             continue
+        # Skip maintainer-only notes that appear before the heading
+        if stripped.startswith("> **MAINTAINER-ONLY"):
+            continue
         return stripped.startswith("#")
     return False
 
@@ -150,7 +153,20 @@ def _validate_todo_format(path: Path) -> list[str]:
     _, body = _split_front_matter(content)
     lines = body.splitlines()
 
-    first_non_empty = next((line.strip() for line in lines if line.strip()), "")
+    # Skip maintainer-only notes that appear before the heading
+    first_non_empty = ""
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("> **MAINTAINER-ONLY"):
+            # Skip all lines in the blockquote until we hit a non-blockquote line
+            continue
+        if stripped.startswith("> "):
+            continue
+        first_non_empty = stripped
+        break
+    
     if first_non_empty != "# TODO":
         errors.append('TODO.md must start with heading "# TODO"')
 

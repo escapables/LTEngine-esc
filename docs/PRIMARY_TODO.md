@@ -5,6 +5,11 @@ read_when:
   - Tracking translate_file development progress.
 ---
 
+> **MAINTAINER-ONLY DOCUMENT**
+> This is an ephemeral internal document for tracking multi-step workstreams.
+> It is temporary state for active development sessions.
+> End users and contributors should refer to ROADMAP.md for planned features.
+
 # PRIMARY TODO: Implement /translate_file Endpoint
 
 ## Objective
