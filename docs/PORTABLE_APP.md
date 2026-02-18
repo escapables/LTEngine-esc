@@ -59,9 +59,17 @@ The server currently supports:
   - Response: `[{"language": "en", "confidence": 99}]`
 - `GET /languages` - List supported languages
 - `GET /frontend/settings` - Frontend configuration
+- `POST /translate_file` - Document translation
+  - Request: Multipart form with `file`, `source`, `target`, `format` fields
+  - Supported formats: `.txt` (text files only, initially)
+  - File size limit: 10MB
+  - Response: `{"translatedFileUrl": "/download/{uuid}"}`
+  - Download URL expires after 1 hour (TTL)
+- `GET /download/{id}` - Download translated file
+  - Response: Binary file download
+  - URL valid for 1 hour after translation
 
 **Not implemented (return 501):**
-- `POST /translate_file` - Document translation
 - `POST /suggest` - Translation suggestions
 
 ## Model Configuration

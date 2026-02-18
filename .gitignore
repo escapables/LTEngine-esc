@@ -22,6 +22,7 @@ config.yml
 
 # Logs
 *.log
+error.txt
 
 # OS files
 .DS_Store

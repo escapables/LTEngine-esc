@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Implemented `/translate_file` endpoint for `.txt` file translation with multipart form upload
+- Added `GET /download/{id}` endpoint for retrieving translated files (1-hour TTL)
+- Added `FileStore` with in-memory storage for translated files
+
 ### Fixed
 
 - Changed default server host binding from `0.0.0.0` to `127.0.0.1` for Windows compatibility.
