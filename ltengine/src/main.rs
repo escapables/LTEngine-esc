@@ -6,7 +6,12 @@ use actix_web::{
 use actix_web_static_files::ResourceFiles;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::{Instant, Duration};
+use uuid::Uuid;
+
+use actix_multipart::form::tempfile::TempFile;
 
 mod banner;
 mod error_response;
@@ -22,6 +27,60 @@ use models::{MODELS, load_model};
 use prompt::PromptBuilder;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
+/// Maximum file size: 10MB
+const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
+
+/// File TTL: 1 hour
+const FILE_TTL_SECS: u64 = 3600;
+
+/// Stored file metadata
+struct StoredFile {
+    filename: String,
+    content: Vec<u8>,
+    created: Instant,
+}
+
+/// In-memory file storage with TTL cleanup
+struct FileStore {
+    files: HashMap<Uuid, StoredFile>,
+}
+
+impl FileStore {
+    fn new() -> Self {
+        Self {
+            files: HashMap::new(),
+        }
+    }
+
+    fn insert(&mut self, filename: String, content: Vec<u8>) -> Uuid {
+        let id = Uuid::new_v4();
+        self.files.insert(
+            id,
+            StoredFile {
+                filename,
+                content,
+                created: Instant::now(),
+            },
+        );
+        id
+    }
+
+    fn get(&self, id: &Uuid) -> Option<&StoredFile> {
+        self.files.get(id)
+    }
+
+    fn remove(&mut self, id: &Uuid) -> Option<StoredFile> {
+        self.files.remove(id)
+    }
+
+    fn cleanup(&mut self) {
+        let now = Instant::now();
+        self.files.retain(|_, file| {
+            now.duration_since(file.created) < Duration::from_secs(FILE_TTL_SECS)
+        });
+    }
+}
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -39,7 +98,7 @@ struct Args {
     char_limit: usize,
 
     /// Model to use
-    #[arg(short='m', long, value_parser = MODELS.keys().collect::<Vec<_>>(), default_value = "gemma3-4b")]
+    #[arg(short='m', long, value_parser = MODELS.keys().collect::<Vec<_>>(), default_value = "gemma3-12b")]
     model: String,
 
     /// Path to .gguf model file
@@ -89,6 +148,15 @@ impl MPTranslateRequest {
             alternatives: self.alternatives.map(|v| v.into_inner()),
         }
     }
+}
+
+/// Multipart form for file translation
+#[derive(MultipartForm)]
+struct FileTranslateForm {
+    file: TempFile,
+    source: Option<MPText<String>>,
+    target: Option<MPText<String>>,
+    format: Option<MPText<String>>,
 }
 
 async fn parse_payload(
@@ -316,11 +384,158 @@ async fn translate(
 }
 
 #[post("/translate_file")]
-async fn translate_file() -> Result<HttpResponse, ErrorResponse> {
-    Err(ErrorResponse {
-        error: "Not implemented".to_string(),
-        status: 501,
-    })
+async fn translate_file(
+    MultipartForm(form): MultipartForm<FileTranslateForm>,
+    args: web::Data<Arc<Args>>,
+    llm: actix_web::web::Data<Arc<llm::LLM>>,
+    file_store: web::Data<Arc<Mutex<FileStore>>>,
+) -> Result<HttpResponse, ErrorResponse> {
+    // Validate required parameters
+    let source = form.source.as_ref().ok_or_else(|| ErrorResponse {
+        error: "Invalid request: missing source parameter".to_string(),
+        status: 400,
+    })?;
+    let source = source.as_str().trim();
+
+    let target = form.target.as_ref().ok_or_else(|| ErrorResponse {
+        error: "Invalid request: missing target parameter".to_string(),
+        status: 400,
+    })?;
+    let target = target.as_str().trim();
+
+    let format = form
+        .format
+        .as_ref()
+        .map(|f| f.as_str().trim())
+        .unwrap_or("text");
+    check_format(format)?;
+
+    // Get file content - read from the temp file
+    use std::io::Read;
+    let mut file = std::fs::File::open(form.file.file.path()).map_err(|_| ErrorResponse {
+        error: "Failed to open uploaded file".to_string(),
+        status: 500,
+    })?;
+    let mut file_content = Vec::new();
+    file.read_to_end(&mut file_content).map_err(|_| ErrorResponse {
+        error: "Failed to read uploaded file".to_string(),
+        status: 500,
+    })?;
+
+    if file_content.len() > MAX_FILE_SIZE {
+        return Err(ErrorResponse {
+            error: format!(
+                "File too large. Maximum size is {} bytes",
+                MAX_FILE_SIZE
+            ),
+            status: 400,
+        });
+    }
+
+    // Get filename and validate extension
+    let filename = form.file.file_name.unwrap_or_else(|| "file.txt".to_string());
+    let extension = filename
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_lowercase();
+
+    // Only support .txt files initially
+    if extension != "txt" {
+        return Err(ErrorResponse {
+            error: "Unsupported file format. Only .txt files are supported".to_string(),
+            status: 400,
+        });
+    }
+
+    // Convert file content to string
+    let text_content = String::from_utf8(file_content.to_vec()).map_err(|_| ErrorResponse {
+        error: "Invalid file encoding. Expected UTF-8 text file".to_string(),
+        status: 400,
+    })?;
+
+    // Check text limit
+    if text_content.len() > args.char_limit {
+        return Err(ErrorResponse {
+            error: format!(
+                "File content ({}) exceeds text limit ({})",
+                text_content.len(),
+                args.char_limit
+            ),
+            status: 400,
+        });
+    }
+
+    // Build translation prompt
+    let mut pb = PromptBuilder::new();
+    pb.set_format(format);
+
+    if source == "auto" {
+        pb.set_source_language("auto");
+    } else {
+        let src_lang = get_language_from_code(source).ok_or_else(|| ErrorResponse {
+            error: format!("{} is not supported", source),
+            status: 400,
+        })?;
+        pb.set_source_language(src_lang.name);
+    }
+
+    let tgt_lang = get_language_from_code(target).ok_or_else(|| ErrorResponse {
+        error: format!("{} is not supported", target),
+        status: 400,
+    })?;
+    pb.set_target_language(tgt_lang.name);
+
+    let llm = llm.get_ref();
+    let prompt = pb.build(&text_content);
+
+    // Translate the content
+    let translated_text = if source != target {
+        llm.run_prompt(prompt.system, prompt.user)
+            .unwrap_or(text_content.clone())
+    } else {
+        text_content.clone()
+    };
+
+    let translated_text = improve_formatting(&text_content, &translated_text);
+
+    // Store translated file
+    let mut store = file_store.lock().map_err(|_| ErrorResponse {
+        error: "Internal server error".to_string(),
+        status: 500,
+    })?;
+
+    let translated_filename = filename.replace(".txt", "_translated.txt");
+    let file_id = store.insert(translated_filename, translated_text.into_bytes());
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "translatedFileUrl": format!("/download/{}", file_id)
+    })))
+}
+
+#[get("/download/{id}")]
+async fn download_file(
+    path: web::Path<Uuid>,
+    file_store: web::Data<Arc<Mutex<FileStore>>>,
+) -> Result<HttpResponse, ErrorResponse> {
+    let id = path.into_inner();
+    let store = file_store.lock().map_err(|_| ErrorResponse {
+        error: "Internal server error".to_string(),
+        status: 500,
+    })?;
+
+    let file = store.get(&id).ok_or_else(|| ErrorResponse {
+        error: "File not found or expired".to_string(),
+        status: 404,
+    })?;
+
+    Ok(HttpResponse::Ok()
+        .content_type("application/octet-stream")
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("attachment; filename=\"{}\"", file.filename),
+        )
+        .body(file.content.clone()))
 }
 
 #[post("/suggest")]
@@ -341,7 +556,7 @@ async fn get_frontend_settings(args: web::Data<Arc<Args>>) -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "apiKeys": false,
         "charLimit": args.char_limit,
-        "filesTranslation": false,
+        "filesTranslation": true,
         "frontendTimeout": 1000,
         "keyRequired": false,
         "language": {
@@ -355,7 +570,7 @@ async fn get_frontend_settings(args: web::Data<Arc<Args>>) -> impl Responder {
             }
         },
         "suggestions": false,
-        "supportedFilesFormat": []
+        "supportedFilesFormat": ["txt"]
     }))
 }
 
@@ -382,16 +597,20 @@ async fn main() -> std::io::Result<()> {
 
     print_banner();
 
+    let file_store = Arc::new(Mutex::new(FileStore::new()));
+
     let server = HttpServer::new(move || {
         let generated = generate();
 
         App::new()
             .app_data(web::Data::new(llm.clone()))
             .app_data(web::Data::new(args.clone()))
+            .app_data(web::Data::new(file_store.clone()))
             .service(get_languages)
             .service(get_frontend_settings)
             .service(translate)
             .service(translate_file)
+            .service(download_file)
             .service(detect)
             .service(suggest)
             .service(ResourceFiles::new("/", generated))

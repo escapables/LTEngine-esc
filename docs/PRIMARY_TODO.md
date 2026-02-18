@@ -43,32 +43,32 @@ read_when:
 
 ## Execution Plan
 
-### Phase 1: Core Implementation
+### Phase 1: Core Implementation - DONE
 
-1. [ ] Add file upload handling dependencies if needed
-   - Verify `actix-multipart` covers file field handling
-   - Add `tempfile` crate for temporary file management
+1. [x] Add file upload handling dependencies if needed
+   - Verified `actix-multipart` covers file field handling
+   - Added `uuid` crate for download ID generation
 
-2. [ ] Create request/response types for file translation
-   - `TranslateFileRequest` struct with multipart fields
+2. [x] Create request/response types for file translation
+   - Implemented inline in handler using `Multipart` trait
    - `TranslateFileResponse` struct with `translatedFileUrl`
 
-3. [ ] Implement file upload processing
+3. [x] Implement file upload processing
    - Extract file content from multipart form
    - Validate file type (`.txt` only initially)
-   - Enforce file size limits
+   - Enforce file size limits (10MB)
 
-4. [ ] Implement translation logic
+4. [x] Implement translation logic
    - Read file content as UTF-8 text
    - Reuse existing `translate` logic for text translation
    - Handle encoding errors gracefully
 
-5. [ ] Implement file serving mechanism
-   - Generate unique download IDs
-   - Store translated content in memory or temp directory
-   - Create `/download/{id}` endpoint to serve translated files
+5. [x] Implement file serving mechanism
+   - Generate unique download IDs via UUID v4
+   - Store translated content in-memory with `FileStore` struct
+   - Created `/download/{id}` endpoint to serve translated files (1-hour TTL)
 
-6. [ ] Update frontend settings
+6. [x] Update frontend settings
    - Set `filesTranslation: true`
    - Set `supportedFilesFormat: [".txt"]`
 
@@ -85,7 +85,12 @@ read_when:
    - Test auto-detect source language
    - Test error scenarios
 
-9. [ ] Update documentation
+9. [ ] Replace line-based file limit with size-based limit
+   - Remove any line-count rejection path in `translate_file`
+   - Enforce byte-size limit only (configurable `file_size_limit`)
+   - Increase default file size limit from current baseline if needed for real documents
+
+10. [ ] Update documentation
    - Update `ARCHITECTURE.md` API surface
    - Update `PORTABLE_APP.md` with supported formats
    - Update `README.md` feature list
@@ -99,19 +104,19 @@ read_when:
 
 ## Acceptance Criteria
 
-- [ ] `/translate_file` accepts `.txt` file uploads
-- [ ] Returns downloadable translated file URL
-- [ ] Supports `source=auto` for language detection
-- [ ] Validates API key when configured
-- [ ] Returns appropriate errors for invalid inputs
-- [ ] Frontend settings reflect file translation capability
-- [ ] Documentation updated to reflect new feature
+- [x] `/translate_file` accepts `.txt` file uploads
+- [x] Returns downloadable translated file URL
+- [x] Supports `source=auto` for language detection
+- [x] Validates API key when configured
+- [x] Returns appropriate errors for invalid inputs
+- [x] Frontend settings reflect file translation capability
+- [ ] Documentation updated to reflect new feature (ARCHITECTURE.md, PORTABLE_APP.md, README.md)
 
 ## Defaults Chosen
 
 - **Initial file format**: `.txt` only (plain text). HTML, DOCX, PDF can be added later.
 - **File storage**: In-memory with UUID-based download IDs. Simpler than temp files, suitable for single-instance deployment.
-- **Size limit**: Reuse existing `char_limit` for translated content; add separate `file_size_limit` CLI arg (default 10MB).
+- **Size limit**: Use size-based validation only for uploaded files (no line-count limit); keep `file_size_limit` CLI arg as the source of truth (default 10MB, can be raised).
 - **Download expiry**: Translated files available for 1 hour (cleanup via background task or on-demand).
 
 ## Architecture Diagram

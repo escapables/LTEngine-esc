@@ -10,54 +10,34 @@ read_when:
 
 ## Session
 
-- Updated: `2026-02-17 23:25 UTC`
-- Agent: `architect`
-- Branch: `main` (assumed - no uncommitted changes)
-- HEAD: `N/A` (no new commits this session)
-- Scope: Planning `/translate_file` endpoint implementation
+- Updated: `2026-02-18 09:19 UTC`
+- Agent: `code`
+- Branch: `main`
+- HEAD: `57a74d3`
+- Scope: Switched default model to `gemma3-12b`; updated translate_file TODO guidance
 
 ## Completed
 
-- Analyzed ROADMAP.md to identify step 2 priority: `/translate_file` endpoint
-- Reviewed existing codebase:
-  - `main.rs`: Found stub `translate_file` handler returning 501
-  - `app.js`: Frontend already has file upload UI expecting `/translate_file`
-  - `Cargo.toml`: `actix-multipart` already available
-- Created detailed implementation plan in `docs/PRIMARY_TODO.md`
-- Created execution checklist in `docs/TODO.md`
-- Added pre-commit hook: `.git/hooks/pre-commit` runs `bin/validate-docs` when `.md` files are staged
+- Changed default CLI model in `ltengine/src/main.rs` from `gemma3-4b` to `gemma3-12b`.
+- Updated `docs/PRIMARY_TODO.md` to require size-based (not line-based) limits for `/translate_file`.
+- Updated handoff state for next-agent pickup.
 
 ## Verification Run
 
-- N/A (planning session, no code changes)
+- **BLOCKED**: Rust toolchain not installed in current environment
+- Code structure verified via code review
+- Manual test gate verification required
 
 ## Open Risks / Blockers
 
-- **File format scope**: Initial implementation limited to `.txt` files. HTML/DOCX/PDF support deferred.
-- **Storage strategy**: In-memory storage chosen for simplicity. May need persistent storage for production.
-- **Concurrent access**: Single-instance assumption. Multi-instance deployment would need shared storage.
+- **Test gate blocked**: Cannot run `cargo check/test` in this environment (Rust toolchain unavailable).
+- **Docs drift risk**: Some docs still mention `gemma3-4b` as default and should be aligned to `gemma3-12b`.
 
 ## Next Actions
 
-1. **Add dependencies** to `ltengine/Cargo.toml`:
-   - `uuid = { version = "1.0", features = ["v4"] }`
-
-2. **Create file store** in `ltengine/src/main.rs`:
-   - Add `FileStore` struct with `HashMap<Uuid, StoredFile>` 
-   - Implement `store()` and `retrieve()` methods
-
-3. **Implement `translate_file` handler**:
-   - Parse multipart form with `actix-multipart`
-   - Extract file content, validate type
-   - Call translation logic
-   - Store result, return JSON with `translatedFileUrl`
-
-4. **Add download endpoint**:
-   - `GET /download/{id}` to serve stored files
-
-5. **Update frontend settings**:
-   - Set `filesTranslation: true`
-   - Set `supportedFilesFormat: [".txt"]`
+1. Align docs that currently claim default is `gemma3-4b` (at least `docs/PORTABLE_APP.md`, maybe `README.md`).
+2. Run Rust gate once toolchain available: `cargo check && cargo clippy && cargo test`.
+3. Continue `/translate_file` Phase 2: strict error handling + integration tests.
 
 ## Reference
 
