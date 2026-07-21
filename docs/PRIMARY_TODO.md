@@ -1,158 +1,74 @@
 ---
-summary: 'Primary execution plan for /translate_file endpoint implementation.'
+summary: 'LTEngine implementation roadmap organized by milestone.'
 read_when:
-  - Implementing file translation feature.
-  - Tracking translate_file development progress.
+  - Planning upcoming implementation work.
+  - Promoting tasks into the active TODO.
+  - Reviewing milestone progress.
 ---
 
-> **MAINTAINER-ONLY DOCUMENT**
-> This is an ephemeral internal document for tracking multi-step workstreams.
-> It is temporary state for active development sessions.
-> End users and contributors should refer to ROADMAP.md for planned features.
+# Roadmap
 
-# PRIMARY TODO: Implement /translate_file Endpoint
+> Target: portable offline Linux document translation through direct CLI/native GUI interfaces and local GGUF inference.
 
-## Objective
+## NOT DONE v0.2 Portable CLI
 
-- Implement LibreTranslate-compatible `/translate_file` endpoint for document translation.
-- Enable users to upload files and receive translated documents.
+| What | Result | Coding tips |
+| --- | --- | --- |
+| Translation core | DONE — model-backed translation independent from Actix handlers | Controlled-engine tests preserve language behavior and errors |
+| Text CLI | DONE — arguments and stdin translate without a listener | Translated text on stdout; diagnostics/errors on stderr |
+| Document CLI | Local `.txt` input writes a selected output path | Test Swedish-to-English first |
+| HTTP removal | Actix, API state, and browser assets removed after parity | Remove dependencies last |
 
-## Interface / Artifact Contract
+Active tasks: TODO 7–8 in `docs/TODO.md`.
 
-### Request
+## NOT DONE v0.3 Long Text Quality
 
-- **Method**: POST `/translate_file`
-- **Content-Type**: `multipart/form-data`
-- **Parameters**:
-  - `file` (required): File to translate
-  - `source` (required): Source language code or "auto"
-  - `target` (required): Target language code
-  - `api_key` (optional): API key if server requires one
+| What | Result | Coding tips |
+| --- | --- | --- |
+| Sentence splitting | Long text split, translated, and reassembled safely | Preserve paragraph structure |
+| Document slicing (29) | Documents around 20,000 words translate sequentially by paragraph; oversized paragraphs split safely | Budget by tokens; preserve order and separators; expose progress/errors |
+| Short-text detection | Better short-text language detection, evaluating a LexiLang port | Benchmark before replacing whatlang |
 
-### Response
+Queued: 9 sentence splitting; 10 short-text language detection; 29 paragraph-sliced long-document pipeline.
 
-- **Success**: JSON with `translatedFileUrl` field pointing to downloadable translated file
-- **Error**: JSON with `error` field and appropriate HTTP status
+## NOT DONE v0.4 Portable Runtime
 
-### Frontend Settings Update
+| What | Result | Coding tips |
+| --- | --- | --- |
+| Offline smoke | Clean Linux host translates with staged binary and model | Disable network during verification |
+| Runtime dependencies | Document and minimize required host libraries | Inspect release binary linkage |
+| Portable layout | Define binary, model directory, licenses, and examples | Keep large model packs separable |
+| UI design (27) | Selected native drag/drop layout for input, languages, progress, preview, and save | Run `$visual-companion`; persist mockups and rationale before toolkit choice |
+| Native UI (28) | Basic Linux GUI calls the Rust core directly without a listener or browser bridge | Health-check toolkit; default Swedish to English; test file drop and save |
 
-- `filesTranslation`: `true`
-- `supportedFilesFormat`: `[".txt"]` (initially)
+Former tasks 11–13 are dispositioned in `docs/ARCHIVE.md`; their reusable concerns moved into TODO 7–8 or the completed core/text CLI.
 
-## Required Scenarios
+## NOT DONE v0.5 Models and Interfaces
 
-1. **Happy path**: Upload `.txt` file, receive translated file URL, download translated content.
-2. **Auto-detect source**: Upload file with `source=auto`, detect language, translate.
-3. **Error handling**: Invalid file type, missing parameters, file too large.
-4. **API key validation**: Enforce key if server configured with one.
+| What | Result | Coding tips |
+| --- | --- | --- |
+| Binding migration | Official `llama-cpp-2` replaces the submodule-backed binding | Adapt upstream; prove Gemma 3 before removal |
+| Gemma 4 E4B | Supported alongside Gemma 3 with correct templates and clean output | Port template fallback and thinking cleanup together |
+| GPU loading resilience | Probe safe offload and reduce layers after load-time OOM | Keep CPU-only operation first-class |
+| Inference observability | Report selected layers, GPU mode, and template fallbacks | Avoid server/request-specific logging |
+| T480 model decision | Reproducible Gemma 3 4B versus Gemma 4 E4B benchmark selects the default | Compare quality, speed, RAM, and model size |
+| Model coverage | Test and document other useful GGUF models | Record quality and memory tradeoffs |
+| Benchmarks | Reproducible comparison with proprietary translators | Publish methodology and fixtures |
+| CLI mode | Text/stdin shipped; document mode is active TODO 7 | Reuse translation core |
+| Library mode | Translation core exposed as a Rust library; bindings evaluated | Stabilize Rust API before bindings |
 
-## Execution Plan
+Ordered model migration: TODO 21–24 in `docs/TODO.md`. Existing queue remains: 14 model evaluation; 15 comparative benchmarks; 16 CLI inference; 17 library mode and bindings.
 
-### Phase 1: Core Implementation - DONE
+Queued upstream ports: 25 GPU offload probing/OOM fallback; 26 portable CI PR triggers, concurrency, and maintained toolchain actions. Exclude upstream HTTP, browser, Docker, endpoint, and client-cancellation changes.
 
-1. [x] Add file upload handling dependencies if needed
-   - Verified `actix-multipart` covers file field handling
-   - Added `uuid` crate for download ID generation
+## NOT DONE v0.6 Release Confidence
 
-2. [x] Create request/response types for file translation
-   - Implemented inline in handler using `Multipart` trait
-   - `TranslateFileResponse` struct with `translatedFileUrl`
+| What | Result | Coding tips |
+| --- | --- | --- |
+| GPU CI | Hardware offloading verified where runners permit | Include upstream's generic CI improvements only |
+| Release rehearsal | Test tag proves artifact workflow and smoke checks | Follow `docs/RELEASING.md` |
+| Portable artifact | Ship an unpackable Linux CLI/GUI directory with documented model staging | Prove it on a clean offline host |
 
-3. [x] Implement file upload processing
-   - Extract file content from multipart form
-   - Validate file type (`.txt` only initially)
-   - Enforce file size limits (10MB)
+Queued: 18 GPU CI verification; 19 portable release dry run. Task 20 is dispositioned in `docs/ARCHIVE.md`.
 
-4. [x] Implement translation logic
-   - Read file content as UTF-8 text
-   - Reuse existing `translate` logic for text translation
-   - Handle encoding errors gracefully
-
-5. [x] Implement file serving mechanism
-   - Generate unique download IDs via UUID v4
-   - Store translated content in-memory with `FileStore` struct
-   - Created `/download/{id}` endpoint to serve translated files (1-hour TTL)
-
-6. [x] Update frontend settings
-   - Set `filesTranslation: true`
-   - Set `supportedFilesFormat: [".txt"]`
-
-### Phase 2: Polish and Testing
-
-7. [ ] Add error handling
-   - Invalid file type (415 Unsupported Media Type)
-   - File too large (413 Payload Too Large)
-   - Encoding errors (400 Bad Request)
-   - Missing parameters (400 Bad Request)
-
-8. [ ] Add integration tests
-   - Test file upload and translation
-   - Test auto-detect source language
-   - Test error scenarios
-
-9. [ ] Replace line-based file limit with size-based limit
-   - Remove any line-count rejection path in `translate_file`
-   - Enforce byte-size limit only (configurable `file_size_limit`)
-   - Increase default file size limit from current baseline if needed for real documents
-
-10. [ ] Update documentation
-   - Update `ARCHITECTURE.md` API surface
-   - Update `PORTABLE_APP.md` with supported formats
-   - Update `README.md` feature list
-
-## Evidence
-
-- `curl -F "file=@test.txt" -F "source=en" -F "target=es" http://localhost:5050/translate_file` returns JSON with `translatedFileUrl`
-- Download URL returns translated file content
-- Frontend file translation UI works end-to-end
-- All tests pass: `cargo test`
-
-## Acceptance Criteria
-
-- [x] `/translate_file` accepts `.txt` file uploads
-- [x] Returns downloadable translated file URL
-- [x] Supports `source=auto` for language detection
-- [x] Validates API key when configured
-- [x] Returns appropriate errors for invalid inputs
-- [x] Frontend settings reflect file translation capability
-- [ ] Documentation updated to reflect new feature (ARCHITECTURE.md, PORTABLE_APP.md, README.md)
-
-## Defaults Chosen
-
-- **Initial file format**: `.txt` only (plain text). HTML, DOCX, PDF can be added later.
-- **File storage**: In-memory with UUID-based download IDs. Simpler than temp files, suitable for single-instance deployment.
-- **Size limit**: Use size-based validation only for uploaded files (no line-count limit); keep `file_size_limit` CLI arg as the source of truth (default 10MB, can be raised).
-- **Download expiry**: Translated files available for 1 hour (cleanup via background task or on-demand).
-
-## Architecture Diagram
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server as actix-web
-    participant Handler as translate_file
-    participant LLM
-    participant Store as FileStore
-
-    Client->>Server: POST /translate_file with file
-    Server->>Handler: Multipart form data
-    Handler->>Handler: Validate file type and size
-    Handler->>Handler: Extract text content
-    Handler->>LLM: Translate text
-    LLM-->>Handler: Translated text
-    Handler->>Store: Store with UUID key
-    Handler-->>Client: JSON with translatedFileUrl
-    Client->>Server: GET /download/{uuid}
-    Server->>Store: Retrieve content
-    Store-->>Client: Translated file
-```
-
-## Key Files to Modify
-
-| File | Changes |
-|------|---------|
-| `ltengine/src/main.rs` | Add `translate_file` handler, `download` endpoint, file store |
-| `ltengine/Cargo.toml` | Add `tempfile` or `uuid` crate if needed |
-| `.kilocode/rules/ARCHITECTURE.md` | Update API surface documentation |
-| `docs/PORTABLE_APP.md` | Update supported formats list |
-| `README.md` | Update feature list |
+<!-- Keep active detail in TODO.md. Never remove queued work without recording its disposition. -->

@@ -1,66 +1,57 @@
 ---
-summary: 'Index of project docs with recommended read order by audience.'
+summary: 'Index of LTEngine documentation with recommended read order.'
 read_when:
   - Onboarding to this repository.
-  - Looking for what to read first.
+  - Looking for the source of truth for a topic.
 ---
 
 # Documentation Index
 
-## By Audience
+## Session Read Order
 
-### Users (End Users)
+1. `docs/HANDOFF.md` — current continuity state.
+2. `docs/TODO.md` — active implementation tasks.
+3. `docs/PRIMARY_TODO.md` — milestone roadmap and queued work.
+4. `docs/PROJECT_SPEC.md` — product purpose and portability contract.
+5. `docs/PORTABLE_APP.md` — current runtime and API contract.
+6. `docs/ARCHITECTURE.md` — system structure and guardrails.
+7. Additional topic docs below as needed.
 
-Start here to understand and run LTEngine:
+## User and Contributor Docs
 
-1. `README.md` - Project overview, quick start, API examples
-2. `docs/PORTABLE_APP.md` - Runtime contract, API surface, model configuration
-3. `docs/ROADMAP.md` - Current features and planned improvements
-4. `docs/linux-dev-setup.md` - Development/build setup
+| Document | Purpose |
+| --- | --- |
+| `README.md` | Product overview, build/run basics, API examples |
+| `docs/PROJECT_SPEC.md` | Product purpose, portability standard, and priorities |
+| `CONTRIBUTING.md` | Contribution and pull-request workflow |
+| `docs/PORTABLE_APP.md` | Runtime, CLI, models, and API behavior |
+| `docs/ROADMAP.md` | Concise public roadmap |
+| `docs/linux-dev-setup.md` | Development toolchain and troubleshooting |
+| `docs/STYLE.md` | Rust conventions |
+| `docs/RELEASING.md` | Release checklist |
+| `docs/CODE_OF_CONDUCT.md` | Community conduct policy |
 
-### Contributors (Developers)
+## Maintainer and Agent Docs
 
-Start here to contribute code:
+| Document | Purpose |
+| --- | --- |
+| `docs/PROJECT_SPEC.md` | Durable scope and architectural direction |
+| `docs/WORKFLOW.md` | Session flow and TODO lifecycle |
+| `docs/PRIMARY_TODO.md` | Detailed milestone roadmap |
+| `docs/TODO.md` | Ready-to-execute task checklist |
+| `docs/HANDOFF.md` | Short cross-session snapshot |
+| `docs/ARCHITECTURE.md` | Architecture, file map, and technical debt |
+| `docs/DEPENDENCIES.md` | Dependency roles and update rules |
+| `docs/decisions/001-cli-only-runtime.md` | Decision and sequencing for removing HTTP |
+| `docs/decisions/002-native-ui-and-cli.md` | Native GUI plus CLI decision and design gate |
+| `docs/ARCHIVE.md` | Completed milestones and collapsed task history |
 
-1. `README.md` - Project overview
-2. `CONTRIBUTING.md` - Contribution guidelines and PR workflow
-3. `docs/linux-dev-setup.md` - Development environment setup
-4. `.kilocode/rules/ARCHITECTURE.md` - Architecture contract and API details
-5. `docs/STYLE.md` - Rust coding conventions
-6. `docs/PORTABLE_APP.md` - Runtime behavior reference
+## Legacy Placeholder Docs
 
-### Maintainers (Core Team)
+These retained files explicitly record features that do not apply to LTEngine:
 
-Internal process documentation:
+- `docs/elevation-setup.md`
+- `docs/mislabel-inventory.md`
+- `docs/scripting.md`
 
-1. `docs/WORKFLOW.md` - Pickup/handoff process for agent continuity
-2. `docs/RELEASING.md` - Release checklist and tagging workflow
-3. `docs/HANDOFF.md` - Current session state (ephemeral)
-4. `docs/TODO.md` - Active task execution checklist
-5. `docs/PRIMARY_TODO.md` - Large multi-step workstream tracking
-6. `docs/CODE_OF_CONDUCT.md` - Community guidelines
-
-## Doc Responsibilities
-
-| Document | Owned By | Purpose |
-|----------|----------|---------|
-| `docs/PORTABLE_APP.md` | Repository | Source of truth for runtime contract and API behavior |
-| `.kilocode/rules/ARCHITECTURE.md` | Agent system | Architecture contract for AI agents |
-| `README.md` | Repository | User-facing overview and quick start |
-| `CONTRIBUTING.md` | Repository | Contributor guidelines |
-
-## Placeholder Docs (Not Applicable)
-
-These docs exist as placeholders but are not relevant to LTEngine:
-
-- `docs/elevation-setup.md` - Elevation data not applicable
-- `docs/mislabel-inventory.md` - Transit route mislabels not applicable
-- `docs/scripting.md` - Lua scripting not applicable
-
-## Internal Process Docs (Maintainer-Only)
-
-These are ephemeral/temporary docs for active development tracking:
-
-- `docs/HANDOFF.md` - Cross-agent session handoff state
-- `docs/TODO.md` - Current task execution checklist
-- `docs/PRIMARY_TODO.md` - Multi-step workstream template
+They contain no active implementation requirements.

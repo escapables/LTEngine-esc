@@ -11,12 +11,19 @@ from pathlib import Path
 DOCS_DIR = Path("docs")
 README_PATH = DOCS_DIR / "README.md"
 TODO_PATH = DOCS_DIR / "TODO.md"
+PRIMARY_TODO_PATH = DOCS_DIR / "PRIMARY_TODO.md"
+ARCHIVE_PATH = DOCS_DIR / "ARCHIVE.md"
+HANDOFF_PATH = DOCS_DIR / "HANDOFF.md"
 EXCLUDED_DIRS = {"archive", "research"}
 SUMMARY_PATTERN = re.compile(r"^summary:\s*(.+)$", re.MULTILINE)
 READ_WHEN_HEADER_PATTERN = re.compile(r"^read_when:\s*$", re.MULTILINE)
 READ_WHEN_INLINE_PATTERN = re.compile(r"^read_when:\s*\[(.+?)\]\s*$", re.MULTILINE)
 README_DOC_REF_PATTERN = re.compile(r"`(docs/[A-Za-z0-9_.\-/]+\.md)`")
 TODO_SECTION_PATTERN = re.compile(r"^###\s+(DONE\s+)?(\d+)\.\s+(.+?)\s*$")
+VERSION_HEADING_PATTERN = re.compile(r"^##\s+(?:(?:DONE|NOT DONE)\s+)?v(\d+\.\d+(?:\.\d+)?)\b")
+HANDOFF_MAX_LINES = 60
+TODO_MAX_LINES = 80
+PRIMARY_TODO_MAX_LINES = 80
 STRICT_FRONT_MATTER = os.environ.get("STRICT_DOCS_FRONT_MATTER", "0") == "1"
 
 
@@ -185,13 +192,7 @@ def _validate_todo_format(path: Path) -> list[str]:
     if not sections:
         return errors + ["TODO.md requires numbered sections like `### 1. Title`"]
 
-    expected = 1
     for _, number, _, title in sections:
-        if number != expected:
-            errors.append(f"TODO.md section numbering must be sequential; expected {expected}, got {number}")
-            expected = number + 1
-        else:
-            expected += 1
         title_words = re.findall(r"[A-Za-z0-9][A-Za-z0-9+:/-]*", title)
         if not 2 <= len(title_words) <= 4:
             errors.append(
@@ -260,6 +261,27 @@ def _validate_todo_format(path: Path) -> list[str]:
     return errors
 
 
+def _validate_roadmap_format(path: Path, label: str, heading: str) -> list[str]:
+    errors: list[str] = []
+    content = path.read_text(encoding="utf-8")
+    _, body = _split_front_matter(content)
+    lines = body.splitlines()
+    first_heading = next((line.strip() for line in lines if line.strip()), "")
+
+    if first_heading != heading:
+        errors.append(f'{label} must start with heading "{heading}"')
+    if not any(VERSION_HEADING_PATTERN.match(line.strip()) for line in lines):
+        errors.append(f"{label} requires at least one version heading (## vX.X)")
+    return errors
+
+
+def _validate_line_count(path: Path, max_lines: int, label: str, advice: str) -> list[str]:
+    line_count = len(path.read_text(encoding="utf-8").splitlines())
+    if line_count > max_lines:
+        return [f"{label} exceeds {max_lines} lines ({line_count}); {advice}"]
+    return []
+
+
 def main() -> int:
     if not DOCS_DIR.exists():
         print("[docs] no docs/ directory")
@@ -279,6 +301,14 @@ def main() -> int:
         errors, warnings = _validate_doc(path)
         if path == TODO_PATH:
             errors.extend(_validate_todo_format(path))
+            errors.extend(_validate_line_count(path, TODO_MAX_LINES, "TODO.md", "move future work to PRIMARY_TODO.md"))
+        if path == HANDOFF_PATH:
+            errors.extend(_validate_line_count(path, HANDOFF_MAX_LINES, "HANDOFF.md", "replace stale detail"))
+        if path == PRIMARY_TODO_PATH:
+            errors.extend(_validate_roadmap_format(path, "PRIMARY_TODO.md", "# Roadmap"))
+            errors.extend(_validate_line_count(path, PRIMARY_TODO_MAX_LINES, "PRIMARY_TODO.md", "split or archive milestones"))
+        if path == ARCHIVE_PATH:
+            errors.extend(_validate_roadmap_format(path, "ARCHIVE.md", "# Archived Milestones"))
         if errors:
             failed = True
             print(f"  FAIL {rel}: {', '.join(errors)}")

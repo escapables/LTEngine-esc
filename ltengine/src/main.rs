@@ -8,23 +8,26 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use actix_multipart::form::tempfile::TempFile;
 
 mod banner;
+mod cli;
 mod error_response;
 mod languages;
 mod llm;
 mod models;
 mod prompt;
+mod translation;
 
 use banner::print_banner;
+use cli::{Args, Command};
 use error_response::ErrorResponse;
-use languages::{LANGUAGES, detect_lang, get_language_from_code};
-use models::{MODELS, load_model};
-use prompt::PromptBuilder;
+use languages::{LANGUAGES, detect_lang};
+use models::load_model;
+use translation::TranslationRequest;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
@@ -80,42 +83,6 @@ impl FileStore {
             now.duration_since(file.created) < Duration::from_secs(FILE_TTL_SECS)
         });
     }
-}
-
-#[derive(Parser, Debug, Clone)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Hostname to bind to
-    #[arg(long, default_value = "127.0.0.1")]
-    host: String,
-
-    /// Port to bind to
-    #[arg(short, long, default_value_t = 5050)]
-    port: u16,
-
-    /// Character limit for translation requests
-    #[arg(long, default_value_t = 5000)]
-    char_limit: usize,
-
-    /// Model to use
-    #[arg(short='m', long, value_parser = MODELS.keys().collect::<Vec<_>>(), default_value = "gemma3-12b")]
-    model: String,
-
-    /// Path to .gguf model file
-    #[arg(long, default_value = "")]
-    model_file: String,
-
-    /// Set an API key
-    #[arg(long, default_value = "")]
-    api_key: String,
-
-    /// Use CPU only
-    #[arg(long)]
-    cpu: bool,
-
-    /// Enable verbose logging
-    #[arg(short = 'v', long)]
-    verbose: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -233,53 +200,6 @@ fn check_params(
     Ok(true)
 }
 
-fn improve_formatting(q: &str, translation: &str) -> String {
-    let t = translation.trim().to_string();
-
-    if q.is_empty() {
-        return String::new();
-    }
-
-    if t.is_empty() {
-        return q.to_string();
-    }
-
-    let q_last_char = q.chars().next_back().unwrap();
-    let translation_last_char = t.chars().next_back().unwrap();
-    let mut result = t.clone();
-
-    const PUNCTUATION_CHARS: [char; 6] = ['!', '?', '.', ',', ';', '。'];
-    if PUNCTUATION_CHARS.contains(&q_last_char) {
-        if q_last_char != translation_last_char {
-            if PUNCTUATION_CHARS.contains(&translation_last_char) {
-                result.pop();
-            }
-
-            result.push(q_last_char);
-        }
-    } else if PUNCTUATION_CHARS.contains(&translation_last_char) {
-        result.pop();
-    }
-
-    if q.chars().all(|c| c.is_lowercase()) {
-        result = result.to_lowercase();
-    }
-
-    if q.chars().all(|c| c.is_uppercase()) {
-        result = result.to_uppercase();
-    }
-
-    if let (Some(q0), Some(r0)) = (q.chars().next(), result.chars().next()) {
-        if q0.is_lowercase() && r0.is_uppercase() {
-            result.replace_range(0..r0.len_utf8(), &r0.to_lowercase().to_string());
-        } else if q0.is_uppercase() && r0.is_lowercase() {
-            result.replace_range(0..r0.len_utf8(), &r0.to_uppercase().to_string());
-        }
-    }
-
-    result.trim().to_string()
-}
-
 #[post("/detect")]
 async fn detect(
     req: HttpRequest,
@@ -296,16 +216,6 @@ async fn detect(
         "language": d.language.code,
         "confidence": d.confidence
     }])))
-}
-
-fn check_format(format: &str) -> Result<bool, ErrorResponse> {
-    match format {
-        "text" | "html" => Ok(true),
-        _ => Err(ErrorResponse {
-            error: "Invalid format. Supported formats: text, html".to_string(),
-            status: 400,
-        }),
-    }
 }
 
 #[post("/translate")]
@@ -330,41 +240,18 @@ async fn translate(
     let source = body.source.unwrap();
     let target = body.target.unwrap();
     let format = body.format.unwrap_or("text".to_string());
-    check_format(&format)?;
+    let result = translation::translate(
+        llm.get_ref().as_ref(),
+        TranslationRequest {
+            text: &q,
+            source: &source,
+            target: &target,
+            format: &format,
+        },
+    )
+    .map_err(ErrorResponse::from)?;
 
-    let mut pb = PromptBuilder::new();
-    pb.set_format(&format);
-
-    // TODO: add HTML support
-
-    if source == "auto" {
-        pb.set_source_language("auto");
-    } else {
-        let src_lang = get_language_from_code(&source).ok_or_else(|| ErrorResponse {
-            error: format!("{} is not supported", source),
-            status: 400,
-        })?;
-        pb.set_source_language(src_lang.name);
-    }
-
-    let tgt_lang = get_language_from_code(&target).ok_or_else(|| ErrorResponse {
-        error: format!("{} is not supported", target),
-        status: 400,
-    })?;
-    pb.set_target_language(tgt_lang.name);
-
-    let llm = llm.get_ref();
-    let prompt = pb.build(&q);
-
-    let translated_text = if source != target {
-        llm.run_prompt(prompt.system, prompt.user)
-            .unwrap_or(q.clone())
-    } else {
-        q.clone()
-    };
-
-    let mut response =
-        serde_json::json!({"translatedText": improve_formatting(&q, &translated_text)});
+    let mut response = serde_json::json!({"translatedText": result.text});
 
     // TODO: we just add this for compatibility for now
     // we should allow multiple alternatives to be generated
@@ -372,11 +259,10 @@ async fn translate(
         response["alternatives"] = serde_json::json!([]);
     }
 
-    if source == "auto" {
-        let d = detect_lang(&q);
+    if let Some(detected) = result.detected_language {
         response["detectedLanguage"] = serde_json::json!({
-            "language": d.language.code,
-            "confidence": d.confidence
+            "language": detected.code,
+            "confidence": detected.confidence
         });
     }
 
@@ -408,7 +294,6 @@ async fn translate_file(
         .as_ref()
         .map(|f| f.as_str().trim())
         .unwrap_or("text");
-    check_format(format)?;
 
     // Get file content - read from the temp file
     use std::io::Read;
@@ -417,28 +302,25 @@ async fn translate_file(
         status: 500,
     })?;
     let mut file_content = Vec::new();
-    file.read_to_end(&mut file_content).map_err(|_| ErrorResponse {
-        error: "Failed to read uploaded file".to_string(),
-        status: 500,
-    })?;
+    file.read_to_end(&mut file_content)
+        .map_err(|_| ErrorResponse {
+            error: "Failed to read uploaded file".to_string(),
+            status: 500,
+        })?;
 
     if file_content.len() > MAX_FILE_SIZE {
         return Err(ErrorResponse {
-            error: format!(
-                "File too large. Maximum size is {} bytes",
-                MAX_FILE_SIZE
-            ),
+            error: format!("File too large. Maximum size is {} bytes", MAX_FILE_SIZE),
             status: 400,
         });
     }
 
     // Get filename and validate extension
-    let filename = form.file.file_name.unwrap_or_else(|| "file.txt".to_string());
-    let extension = filename
-        .rsplit('.')
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
+    let filename = form
+        .file
+        .file_name
+        .unwrap_or_else(|| "file.txt".to_string());
+    let extension = filename.rsplit('.').next().unwrap_or("").to_lowercase();
 
     // Only support .txt files initially
     if extension != "txt" {
@@ -466,38 +348,16 @@ async fn translate_file(
         });
     }
 
-    // Build translation prompt
-    let mut pb = PromptBuilder::new();
-    pb.set_format(format);
-
-    if source == "auto" {
-        pb.set_source_language("auto");
-    } else {
-        let src_lang = get_language_from_code(source).ok_or_else(|| ErrorResponse {
-            error: format!("{} is not supported", source),
-            status: 400,
-        })?;
-        pb.set_source_language(src_lang.name);
-    }
-
-    let tgt_lang = get_language_from_code(target).ok_or_else(|| ErrorResponse {
-        error: format!("{} is not supported", target),
-        status: 400,
-    })?;
-    pb.set_target_language(tgt_lang.name);
-
-    let llm = llm.get_ref();
-    let prompt = pb.build(&text_content);
-
-    // Translate the content
-    let translated_text = if source != target {
-        llm.run_prompt(prompt.system, prompt.user)
-            .unwrap_or(text_content.clone())
-    } else {
-        text_content.clone()
-    };
-
-    let translated_text = improve_formatting(&text_content, &translated_text);
+    let result = translation::translate(
+        llm.get_ref().as_ref(),
+        TranslationRequest {
+            text: &text_content,
+            source,
+            target,
+            format,
+        },
+    )
+    .map_err(ErrorResponse::from)?;
 
     // Store translated file
     let mut store = file_store.lock().map_err(|_| ErrorResponse {
@@ -506,7 +366,7 @@ async fn translate_file(
     })?;
 
     let translated_filename = filename.replace(".txt", "_translated.txt");
-    let file_id = store.insert(translated_filename, translated_text.into_bytes());
+    let file_id = store.insert(translated_filename, result.text.into_bytes());
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "translatedFileUrl": format!("/download/{}", file_id)
@@ -576,17 +436,14 @@ async fn get_frontend_settings(args: web::Data<Arc<Args>>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let args = Arc::new(Args::parse());
-
-    let host = args.host.clone();
-    let port = args.port;
+    let args = Args::parse();
 
     let model_path = load_model(&args.model, &args.model_file).unwrap_or_else(|err| {
         eprintln!("Failed to load model: {}", err);
         std::process::exit(1);
     });
 
-    println!("Loading model: {}", model_path.display());
+    eprintln!("Loading model: {}", model_path.display());
 
     let llm = Arc::new(
         llm::LLM::new(model_path, args.cpu, args.verbose).unwrap_or_else(|err| {
@@ -594,6 +451,22 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         }),
     );
+
+    if let Some(Command::Translate(command)) = &args.command {
+        let stdin = std::io::stdin();
+        let stdout = std::io::stdout();
+        cli::run_translate(command, llm.as_ref(), stdin.lock(), stdout.lock()).unwrap_or_else(
+            |error| {
+                eprintln!("Error: {error:#}");
+                std::process::exit(1);
+            },
+        );
+        return Ok(());
+    }
+
+    let args = Arc::new(args);
+    let host = args.host.clone();
+    let port = args.port;
 
     print_banner();
 

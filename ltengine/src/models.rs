@@ -15,6 +15,8 @@ pub enum Model {
     Remote { hf: HuggingFace },
 }
 
+pub const DEFAULT_MODEL: &str = "gemma3-4b";
+
 pub static MODELS: once_cell::sync::Lazy<HashMap<&'static str, HuggingFace>> =
     once_cell::sync::Lazy::new(|| {
         let mut m = HashMap::new();
@@ -85,4 +87,15 @@ pub fn load_model(model_id: &str, model_file: &str) -> Result<PathBuf> {
     };
 
     model.load()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DEFAULT_MODEL, MODELS};
+
+    #[test]
+    fn default_model_is_4b() {
+        assert_eq!(DEFAULT_MODEL, "gemma3-4b");
+        assert!(MODELS.contains_key(DEFAULT_MODEL));
+    }
 }

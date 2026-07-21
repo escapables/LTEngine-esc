@@ -1,6 +1,8 @@
 # LTEngine
 
-Free and Open Source Local AI Machine Translation API, written in Rust, entirely self-hosted and compatible with [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate). Its translation capabilities are powered by large language models (LLMs) that run locally on your machine via [llama.cpp](https://github.com/ggml-org/llama.cpp). 
+LTEngine-esc is a portable, offline-first Linux document translator powered by local GGUF language models and [llama.cpp](https://github.com/ggml-org/llama.cpp). The primary validated workflow is Swedish-to-English translation, while other language pairs remain supported.
+
+The application now translates text or stdin directly from the CLI without a listener. The inherited [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)-compatible HTTP server remains temporarily for document parity, then will be removed with the bundled browser UI; see [the project specification](docs/PROJECT_SPEC.md) for the product contract and current-versus-target distinction.
 
 ![Translation](https://github.com/user-attachments/assets/37dd4e20-382b-459d-bcc1-5de3ed4b4c18)
 
@@ -28,8 +30,8 @@ It is possible to run LTEngine entirely on the CPU, but an accelerator will grea
 
 ```bash
 git clone https://github.com/escapables/LTEngine-esc.git --recursive
-cd LTEngine
-cargo build [--features cuda,vulkan,metal] --release
+cd LTEngine-esc
+cargo build --release
 ```
 
 ## Run
@@ -38,11 +40,35 @@ cargo build [--features cuda,vulkan,metal] --release
 ./target/release/ltengine
 ```
 
+With no subcommand, this starts the temporary local server at `http://127.0.0.1:5050`.
+
+Translate Swedish text directly to English:
+
+```bash
+./target/release/ltengine translate --source sv --target en --text 'Hej världen!' --model-file ./models/model.gguf
+```
+
+Translate stdin with automatic source detection:
+
+```bash
+printf 'Hej världen!\n' | ./target/release/ltengine translate --source auto --target en --stdin --model-file ./models/model.gguf
+```
+
+Exactly one of `--text` or `--stdin` is required. The translation is the only stdout output; model status and errors use stderr.
+
 To run different LLM models:
 
 ```bash
-./target/release/ltengine -m gemma3-12b [--model-file /path/to/model.gguf]
+./target/release/ltengine -m gemma3-4b [--model-file /path/to/model.gguf]
 ```
+
+For offline operation, stage the GGUF model before disconnecting and pass its local path:
+
+```bash
+./target/release/ltengine --model-file ./models/model.gguf
+```
+
+Inference remains local and makes no external translation API calls. Without `--model-file`, first use may download a model from Hugging Face.
 
 ## Models
 
@@ -51,8 +77,8 @@ LTEngine supports any GGUF language model supported by [llama.cpp](https://githu
 | Model      | RAM Usage | GPU Usage | Notes                               | Default            |
 | ---------- | --------- | --------- | ----------------------------------- | ------------------ |
 | gemma3-1b  | 1G        | 2G        | Good for testing, poor translations |                    |
-| gemma3-4b  | 4G        | 4G        |                                     |                    |
-| gemma3-12b | 8G        | 10G       |                                     | :heavy_check_mark: |
+| gemma3-4b  | 4G        | 4G        |                                     | :heavy_check_mark: |
+| gemma3-12b | 8G        | 10G       |                                     |                    |
 | gemma3-27b | 16G       | 18G       | Best translation quality, slowest   |                    |
 
 Memory usage numbers are approximate.
@@ -136,17 +162,9 @@ You can use the LTEngine API using the following bindings:
 
 ## Roadmap
 
- - [ ] Remove mutex block that currently limits the software to process one single translation request at a time due to a possible bug in llama.cpp. 
- - [ ] Cancel inference (stop generating tokens) when HTTP connections are aborted by clients. I'm unsure how this could done with actix-web.
- - [x] Add support for `/translate_file` (ability to translate files).
- - [ ] Add support for sentence splitting. Currently text is sent to the LLM as-is, but longer texts (like documents) should be split into chunks, translated and merged back.
- - [ ] Better language detection for short texts (port [LexiLang](https://github.com/LibreTranslate/LexiLang) to Rust)
- - [ ] Test/add more LLM models aside from Gemma3
- - [ ] Create comparative benchmarks between LTEngine and proprietary software.
- - [ ] Add support for command line inference (run `./ltengine translate` as a command line app separate from `./ltengine server`)
- - [ ] Make ltengine available as a library, possibly creating bindings for other languages like Python.
- - [x] Automated builds / CI
- - [ ] Your ideas? We welcome contributions.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the public roadmap. Maintainers use
+[docs/PRIMARY_TODO.md](docs/PRIMARY_TODO.md) for milestone detail and
+[docs/TODO.md](docs/TODO.md) for ready work.
 
 ## Contributing
 

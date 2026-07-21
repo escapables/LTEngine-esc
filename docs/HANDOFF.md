@@ -1,51 +1,46 @@
 ---
-summary: 'Ephemeral per-session handoff state for cross-agent pickup continuity.'
+summary: 'Cross-agent session state for pickup.'
 read_when:
-  - Starting work (`/pickup`).
-  - Ending a work session.
-  - Taking over from another agent.
+  - Starting a session.
+  - Picking up where the last agent stopped.
 ---
 
-> **MAINTAINER-ONLY DOCUMENT**
-> This is an ephemeral internal document for active development session tracking.
-> It is temporary state and will be overwritten by the next work session.
-> End users and contributors should not rely on this document.
-
-# HANDOFF
+# Handoff
 
 ## Session
 
-- Updated: `2026-02-18 09:19 UTC`
-- Agent: `code`
-- Branch: `main`
-- HEAD: `57a74d3`
-- Scope: Switched default model to `gemma3-12b`; updated translate_file TODO guidance
+2026-07-21. Completed TODO 6 direct text/stdin CLI translation.
 
 ## Completed
 
-- Changed default CLI model in `ltengine/src/main.rs` from `gemma3-4b` to `gemma3-12b`.
-- Updated `docs/PRIMARY_TODO.md` to require size-based (not line-based) limits for `/translate_file`.
-- Updated handoff state for next-agent pickup.
+- Added `translate --source CODE --target CODE` with exclusive `--text` or `--stdin` input.
+- Kept translated text alone on stdout; moved model status and actionable errors to stderr.
+- Added controlled CLI coverage for Swedish-English, another pair, auto-detected stdin, identity, input validation, and inference errors.
+- Returned before HTTP banner/state/listener creation in direct CLI mode; marked TODO 6 complete.
+
+## Changed Files
+
+- Runtime/tests: `ltengine/src/cli.rs`, `ltengine/src/main.rs`, `ltengine/src/error_response.rs`.
+- Tracking/docs: `README.md`, `docs/TODO.md`, `docs/PRIMARY_TODO.md`, `docs/PROJECT_SPEC.md`, `docs/ARCHITECTURE.md`, `docs/PORTABLE_APP.md`, `docs/ROADMAP.md`, `docs/HANDOFF.md`, `CHANGELOG.md`.
 
 ## Verification Run
 
-- **BLOCKED**: Rust toolchain not installed in current environment
-- Code structure verified via code review
-- Manual test gate verification required
+- CLI execution tests -> expected RED before implementation; then 7/7 PASS.
+- `cargo test -p ltengine --bin ltengine` -> PASS; 15/15 tests.
+- `cargo run -q -p ltengine -- translate --help` -> PASS; no model download.
+- `bin/verify-fast` -> PASS; `main.rs` reduced from 536 to 497 lines.
+- `bin/test-gate` -> PASS; 4 binding tests, 15 LTEngine tests, and 71 doc tests passed; 2 doc tests ignored.
+- Existing LTEngine and pinned-binding warnings remain non-fatal.
 
 ## Open Risks / Blockers
 
-- **Test gate blocked**: Cannot run `cargo check/test` in this environment (Rust toolchain unavailable).
-- **Docs drift risk**: Some docs still mention `gemma3-4b` as default and should be aligned to `gemma3-12b`.
+- Legacy Actix remains the default/no-subcommand mode until direct document parity lands.
+- CLI runtime still needs a staged local model for offline operation; clean-host acceptance remains unverified.
+- Current `/translate_file` limitations are preserved in `docs/ARCHIVE.md`; do not harden the endpoint instead of replacing it.
+- Release workflow exists, but GPU offloading and a test-tag rehearsal remain unverified.
 
 ## Next Actions
 
-1. Align docs that currently claim default is `gemma3-4b` (at least `docs/PORTABLE_APP.md`, maybe `README.md`).
-2. Run Rust gate once toolchain available: `cargo check && cargo clippy && cargo test`.
-3. Continue `/translate_file` Phase 2: strict error handling + integration tests.
-
-## Reference
-
-- Detailed plan: [`docs/PRIMARY_TODO.md`](PRIMARY_TODO.md)
-- Execution checklist: [`docs/TODO.md`](TODO.md)
-- Architecture: [`.kilocode/rules/ARCHITECTURE.md`](../.kilocode/rules/ARCHITECTURE.md)
+- Implement TODO 7 direct `.txt` input/output translation.
+- Remove HTTP/runtime dependencies in TODO 8 only after CLI parity.
+- Then continue ordered model migration TODO 21–24.

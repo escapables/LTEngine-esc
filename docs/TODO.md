@@ -1,72 +1,62 @@
 ---
-summary: 'Execution checklist for documentation review remediation.'
-read_when:
-  - Updating project documentation after a review.
-  - Tracking documentation correctness and structure tasks.
+summary: 'Active LTEngine implementation checklist.'
+read_when: [Starting a session, Looking for the next implementation task.]
 ---
-
-> **MAINTAINER-ONLY DOCUMENT**
-> This is an ephemeral internal document for tracking active tasks.
-> It is temporary state and will be updated as work progresses.
-> End users and contributors should refer to ROADMAP.md for planned features.
 
 # TODO
 
-### DONE 1. Define Doc Review Scope
+// DONE 1–4 — 2026-02 documentation review scope plus P0, P1, and P2 remediation.
+// DONE 5 — reusable translation core with controlled-inference tests and propagated errors.
+// DONE 6 — direct text/stdin CLI with controlled-engine coverage and clean stdout.
 
-# Task: Define and document the documentation review scope.
-#
-# Scope:
-# - Review first-party docs in README.md, docs/, and .kilocode/rules/ARCHITECTURE.md
-# - Compare docs against current implementation behavior
-# - Identify stale, inaccurate, and ambiguous documentation
-# - Produce prioritized remediation list (P0/P1/P2)
-#
-# Done when:
-# - [x] Coverage summary is documented
-# - [x] Mismatches are documented with concrete file targets
+### 7. CLI document translation
+Task: Translate local documents directly to a user-selected output path.
+Scope:
+- Support `.txt` first with a configurable 10 MiB byte limit and invalid-UTF-8 errors.
+- Preserve multiline structure; avoid the server `char_limit` and in-memory download store.
+Done when:
+- Tests cover Swedish-to-English output, limits, encoding, and safe path behavior.
+- `bin/verify-fast` passes.
 
-### DONE 2. Apply P0 Fixes
+### 8. Remove HTTP runtime
+Task: Remove the web server after direct CLI text and document parity.
+Scope:
+- Delete Actix handlers/state, static browser resources, and HTTP-only dependencies.
+- Remove host, port, API-key, download-store, and LibreTranslate compatibility behavior.
+Done when:
+- Binary opens no listener; CLI tests, `bin/test-gate`, and updated runtime docs pass.
 
-# Task: Fix high-priority documentation inaccuracies and drift.
-#
-# Scope:
-# - Update default model references to gemma3-12b where needed
-# - Mark /translate_file as shipped where docs still say pending
-# - Fix release docs branch command from master to main
-# - Align API contract notes with implementation (download expiry, API key behavior, file format notation)
-#
-# Done when:
-# - [x] README.md is corrected
-# - [x] docs/PORTABLE_APP.md is corrected
-# - [x] docs/ROADMAP.md is corrected
-# - [x] docs/RELEASING.md is corrected
+### 21. Official llama binding
+Task: Port upstream's migration to the official `llama-cpp-2` crate before adding Gemma 4.
+Scope:
+- Move to the upstream-proven official crate/version and adapt its API and warning cleanup.
+- Update the lockfile; remove the submodule only after Gemma 3 regression coverage passes.
+Done when:
+- Gemma 3 loads/translates and `bin/test-gate` passes without importing Docker or HTTP changes.
 
-### DONE 3. Apply P1 Improvements
+### 22. Gemma 4 support
+Task: Port upstream Gemma 4 E4B support without removing existing Gemma 3 choices.
+Scope:
+- Add the E4B GGUF model entry and verified download metadata.
+- Port template fallback, thinking cleanup, and useful model/template logging with regression tests.
+Done when:
+- Gemma 3 4B and Gemma 4 E4B both load and translate representative inputs.
+- Gemma 3 4B remains the default pending benchmark evidence.
 
-# Task: Improve contributor and setup documentation usability.
-#
-# Scope:
-# - Add CONTRIBUTING.md with local quality gates and PR expectations
-# - Make setup docs copy-pasteable (replace bracketed pseudo-commands)
-# - Add expected first-run behavior and practical troubleshooting notes
-#
-# Done when:
-# - [x] CONTRIBUTING.md exists and is linked from README.md
-# - [x] docs/linux-dev-setup.md commands are copy-pasteable
-# - [x] Setup flow includes expected outputs and common failure cases
+### 23. T480 translation benchmark
+Task: Compare Gemma 3 4B and Gemma 4 E4B on the target ThinkPad T480.
+Scope:
+- Measure translation quality, startup time, tokens per second, peak RAM, and model size.
+- Use matched multilingual fixtures and settings; record hardware and reproducible commands.
+Done when:
+- Results identify whether Gemma 4's quality gain justifies its higher resource cost.
+- Benchmark method and results are documented.
 
-### DONE 4. Apply P2 Improvements
-
-# Task: Reduce drift risk and improve docs discoverability.
-#
-# Scope:
-# - Choose a single source of truth for architecture/API docs
-# - Rework docs/README.md by audience (user/developer/releaser)
-# - Mark internal process docs as maintainer-only
-# - Clarify placeholder docs so they are not confused with complete docs
-#
-# Done when:
-# - [x] docs/PORTABLE_APP.md and .kilocode/rules/ARCHITECTURE.md responsibilities are explicit
-# - [x] docs/README.md read order is audience-oriented
-# - [x] Internal docs (HANDOFF/TODO/PRIMARY_TODO) are clearly labeled
+### 24. Default model decision
+Task: Select the project default from the T480 benchmark results.
+Scope:
+- Promote Gemma 4 E4B only if it provides the preferred quality/resource trade-off.
+- Otherwise retain Gemma 3 4B; align defaults, tests, README, runtime docs, and model tables.
+Done when:
+- The decision and evidence are documented and all default-model references agree.
+- `bin/verify-fast` and the focused default-model regression test pass.

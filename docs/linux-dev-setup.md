@@ -9,7 +9,7 @@ read_when:
 
 Requirements:
 
-- [Rust](https://www.rust-lang.org/) (latest stable)
+- [Rust](https://www.rust-lang.org/) (latest stable), including `rustfmt` and Clippy
 - [clang](https://clang.llvm.org/)
 - [CMake](https://cmake.org/) 3.12+
 - A C++ compiler (g++, MSVC, or clang++) for building llama.cpp bindings
@@ -24,7 +24,7 @@ Optional for hardware acceleration:
 ```bash
 # Standard build
 git clone https://github.com/escapables/LTEngine-esc.git --recursive
-cd LTEngine
+cd LTEngine-esc
 cargo build --release
 
 # With hardware acceleration (choose one)
@@ -42,7 +42,7 @@ cargo build --release --features vulkan   # Vulkan-compatible GPU
 To run with a specific model:
 
 ```bash
-./target/release/ltengine -m gemma3-12b [--model-file /path/to/model.gguf]
+./target/release/ltengine -m gemma3-4b [--model-file /path/to/model.gguf]
 ```
 
 ## Development Tips
@@ -55,13 +55,13 @@ To run with a specific model:
 ## Expected First-Run Behavior
 
 On first run, the server will:
-1. Download the default model (~5-15GB depending on model size) from HuggingFace
+1. Download the default Gemma3 4B model (several GB) from HuggingFace
 2. Load the model into memory (this may take 30-60 seconds)
 3. Start the HTTP server on `127.0.0.1:5050`
 
 Expected output:
 ```
-Loading model gemma-3-12b-it-q4_0.gguf...
+Loading model gemma-3-4b-it-q4_0.gguf...
 Server running on http://127.0.0.1:5050
 ```
 

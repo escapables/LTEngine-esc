@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added direct text and stdin translation through the `translate` CLI subcommand.
+- Extracted reusable translation behavior behind a controlled inference boundary.
 - Implemented `/translate_file` endpoint for `.txt` file translation with multipart form upload
 - Added `GET /download/{id}` endpoint for retrieving translated files (1-hour TTL)
 - Added `FileStore` with in-memory storage for translated files
 
 ### Fixed
 
+- Return translation inference failures instead of silently returning the source text.
 - Changed default server host binding from `0.0.0.0` to `127.0.0.1` for Windows compatibility.
 
 ### Added

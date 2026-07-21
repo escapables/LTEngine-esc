@@ -1,47 +1,55 @@
 ---
-summary: 'Unified pickup/handoff workflow and execution checklist for cross-agent continuity.'
+summary: 'Session workflow and TODO lifecycle.'
 read_when:
-  - Starting a session.
-  - Handing off work.
-  - Reviewing cross-agent continuity expectations.
+  - Starting or wrapping up a session.
+  - Updating TODO or handoff state.
 ---
 
 # Workflow
 
-`HANDOFF.md` is a short continuity snapshot for cross-agent pickup.
+## Session Flow
 
-Shared instructions already live elsewhere and are not duplicated here:
-- `/pickup` prompt + `~/projects/agent-scripts/kimi/pickup/SKILL.md` (session start flow)
-- local/global `AGENTS.md` (gate/CI/docs behavior)
+1. Pickup: read `docs/HANDOFF.md`, `docs/TODO.md`, `docs/PRIMARY_TODO.md`, `docs/PORTABLE_APP.md`.
+2. Confirm runtime facts against code before changing stale docs.
+3. Spec and plan new features or significant behavior changes.
+4. Implement in small batches; add regression tests when they fit.
+5. Verify with `bin/verify-fast`; use `bin/test-gate` before larger handoffs.
+6. Handoff: replace `docs/HANDOFF.md` with current state and explicit changed files.
 
-## Handoff Contract (Repo-Specific)
+## HANDOFF.md Contract
 
-- Keep `docs/HANDOFF.md` under `60` total lines (including front matter).
-- Replace stale content; do not accumulate long historical logs.
-- Keep section shape: `Session`, `Completed`, `Verification Run`, `Open Risks / Blockers`, `Next Actions`.
-- Keep `Completed` to short session deltas only (max `4` bullets).
-- Keep `Verification Run` concrete (command + result).
-- Keep `Next Actions` to `2-3` bullets with concrete commands or checks.
+`HANDOFF.md` is a short continuity snapshot, not a history log.
 
-## TODO Item Lifecycle
+- Keep under 60 lines.
+- Replace stale content.
+- Sections: `Session`, `Completed`, `Changed Files`, `Verification Run`, `Open Risks / Blockers`, `Next Actions`.
+- `Completed`: current session deltas only.
+- `Changed Files`: every file added, modified, or deleted this session.
+- `Verification Run`: exact command and result.
+- `Next Actions`: 2–3 concrete bullets.
 
-When finishing a TODO item:
-- Mark `DONE` in the task title: `### 3. DONE Harden Security`
-- Mark each `Done when:` step as `DONE`: `- DONE Security hardened`
-- Do **not** renumber the list; preserve original numbering
+## TODO Lifecycle
 
-When adding a new TODO item:
-- Append to the current list with the next sequential number
-- Do **not** renumber existing items
+Finished item:
 
-Format example:
-```markdown
-### 3. DONE Harden Security
-Task: Implement security hardening measures.
-Scope:
-- Review authentication flows
-- Add rate limiting
-Done when:
-- DONE Authentication reviewed
-- DONE Rate limiting implemented
+```text
+// DONE 5 — short completion summary.
 ```
+
+Rules:
+
+- Remove the finished Task/Scope/Done-when block.
+- Never renumber existing items.
+- Add new items with the next unused number.
+- Mark DONE only after verification.
+- Keep `docs/TODO.md` for ready work; keep future detail in `docs/PRIMARY_TODO.md`.
+
+## Milestone Completion
+
+When every task for a milestone is done:
+
+- Verify milestone deliverables.
+- Change its `docs/PRIMARY_TODO.md` heading from NOT DONE to DONE.
+- Move older completed milestones to `docs/ARCHIVE.md` when space is tight.
+- Promote the next 3–6 ready tasks into `docs/TODO.md`.
+- Update `docs/HANDOFF.md`.

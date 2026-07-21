@@ -99,6 +99,12 @@ impl LLM {
     }
 }
 
+impl crate::translation::Inference for LLM {
+    fn run_prompt(&self, system: String, user: String) -> Result<String> {
+        LLM::run_prompt(self, system, user)
+    }
+}
+
 impl LLMContext<'_> {
     pub fn process(&mut self, tokens_list: Vec<LlamaToken>) -> Result<String> {
         // We use this object to submit token data for decoding

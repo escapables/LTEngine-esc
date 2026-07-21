@@ -30,6 +30,21 @@ Before release:
 
 - Distribution channel: GitHub Releases only.
 - Release gate: local build verification completed before tag; CI runs on published release.
+- Product artifact: unpackable Linux CLI/GUI directory; a model pack may be distributed separately.
+- Do not label an artifact portable or offline-ready until the checks below pass.
+
+## Portable Linux Gate
+
+Once the direct CLI ships:
+
+1. Build the release binary and record dynamic linkage with `ldd` or equivalent.
+2. Stage the binary, licenses, usage example, and a compatible local GGUF model in a clean directory.
+3. Copy that directory to the oldest supported clean Linux environment.
+4. Disable network access and confirm no listener opens.
+5. Translate a Swedish `.txt` fixture to English through the CLI.
+6. Confirm output path, content, missing-model errors, and unsupported-file errors.
+
+Record the distribution, architecture, CPU features, accelerator use, model filename/hash, and command in the release notes. Model packs may remain separate from the binary artifact but must be stageable before offline use.
 
 ## Release Checklist
 
@@ -47,6 +62,8 @@ cargo test
 ```bash
 ./target/release/ltengine --help
 ```
+
+For the current server-first build, document that this smoke check does not yet prove portable CLI or offline acceptance. After TODO 8, replace it with the CLI translation smoke from the portable Linux gate.
 
 4. Commit release metadata:
 ```bash

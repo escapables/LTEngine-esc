@@ -1,65 +1,36 @@
 ---
-summary: 'Prioritized roadmap for LTEngine development.'
+summary: 'Public overview of LTEngine development priorities.'
 read_when:
-  - Planning upcoming work.
-  - Tracking what ships next.
-  - Deciding near-term implementation priorities.
+  - Reviewing project direction.
+  - Choosing an area to contribute to.
 ---
 
 # Roadmap
 
-## Current Status (2026-02-17)
+## Current Status
 
-- Core translation API functional with Gemma3 models.
-- Supports CPU, CUDA, Metal, and Vulkan backends.
-- PRIMARY_TODO modernization: 6 of 6 steps complete.
+- Inherited local LibreTranslate-compatible server using GGUF language models.
+- Direct text/stdin translation through the shared core without a listener.
+- Default Gemma3 4B model; CPU, CUDA, Metal, and Vulkan builds.
+- `.txt` file translation foundation and release-triggered platform builds.
+- Direct document CLI and portable release acceptance are not implemented yet.
 
-## Immediate Priority (Next Session)
+## Near Term
 
-**BLOCKED until PRIMARY_TODO complete:** Codebase modernization is required before new features.
+- Extract translation behavior from HTTP handlers.
+- Add direct `.txt` document translation to the shipped text/stdin CLI.
+- Translate long documents in bounded paragraph slices with progress and ordered reassembly.
+- Design with `$visual-companion`, then add a native drag-and-drop document UI.
+- Remove Actix, LibreTranslate endpoints, and browser resources after CLI parity.
+- Verify Swedish-to-English translation offline on a clean Linux system.
+- Add sentence splitting for long documents.
+- Improve language detection for short text.
 
-1. ~~Implement CI release workflow for automated builds.~~ (Done - release.yml created)
-2. ~~Add `/translate_file` endpoint for document translation.~~ (Done - shipped in v0.2.0)
-3. Implement sentence splitting for longer texts.
-4. Add better language detection for short texts (port LexiLang to Rust).
+## Later
 
-## Completed Foundations
+- Evaluate more LLM families and publish comparative benchmarks.
+- Extract a reusable Rust library and then evaluate language bindings.
+- Verify GPU release builds and rehearse the release workflow with a test tag.
+- Expand document formats after reliable `.txt` translation.
 
-- Basic `/translate` endpoint with LibreTranslate compatibility.
-- LLM inference via llama-cpp-rs.
-- Model download from HuggingFace.
-- Auto language detection using whatlang.
-- Support for multiple hardware acceleration backends.
-- Release workflow (`.github/workflows/release.yml`) created.
-
-## In Progress / Planned
-
-- [x] **PRIMARY_TODO:** Codebase cleanup and modernization (DONE - 6/6 steps)
-- [ ] Remove mutex block limiting concurrent translation requests.
-- [ ] Cancel inference when HTTP connections are aborted.
-- [x] Add `/translate_file` endpoint for document translation.
-- [ ] Sentence splitting for long text chunking.
-- [ ] Better language detection for short texts.
-- [ ] Test/add more LLM models beyond Gemma3.
-- [ ] Comparative benchmarks vs proprietary services.
-- [ ] Command line inference mode (`./ltengine translate`).
-- [ ] Library mode with bindings for other languages.
-- [x] ~~Automated CI builds and releases.~~ (Workflow created, needs GPU verification)
-
-## Release Automation Status
-
-- [x] Workflow file created (`.github/workflows/release.yml`)
-- [x] Multi-platform builds configured (Linux, macOS, Windows)
-- [x] Smoke tests configured
-- [x] Release asset upload configured
-- [ ] GPU offloading verified in CI
-- [ ] Docker image publication (optional)
-- [ ] Dry run on test tag completed
-
-## Guardrails
-
-- Keep API compatible with LibreTranslate.
-- Maintain offline capability.
-- Prioritize translation quality over speed (within reason).
-- Keep docs aligned with actual shipped behavior.
-- **No new features until PRIMARY_TODO modernization complete.**
+Detailed milestones and every queued task live in `docs/PRIMARY_TODO.md`.
