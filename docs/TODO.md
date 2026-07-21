@@ -8,15 +8,7 @@ read_when: [Starting a session, Looking for the next implementation task.]
 // DONE 1–4 — 2026-02 documentation review scope plus P0, P1, and P2 remediation.
 // DONE 5 — reusable translation core with controlled-inference tests and propagated errors.
 // DONE 6 — direct text/stdin CLI with controlled-engine coverage and clean stdout.
-
-### 7. CLI document translation
-Task: Translate local documents directly to a user-selected output path.
-Scope:
-- Support `.txt` first with a configurable 10 MiB byte limit and invalid-UTF-8 errors.
-- Preserve multiline structure; avoid the server `char_limit` and in-memory download store.
-Done when:
-- Tests cover Swedish-to-English output, limits, encoding, and safe path behavior.
-- `bin/verify-fast` passes.
+// DONE 7 — bounded UTF-8 `.txt` input writes a safe selected output path with layout preservation.
 
 ### 8. Remove HTTP runtime
 Task: Remove the web server after direct CLI text and document parity.

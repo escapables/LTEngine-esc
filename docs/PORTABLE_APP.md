@@ -15,7 +15,7 @@ The durable product direction lives in `docs/PROJECT_SPEC.md`. This file disting
 
 ## Scope
 
-- Current application: direct text/stdin CLI plus a legacy local HTTP API server.
+- Current application: direct text/stdin/`.txt` CLI plus a legacy local HTTP API server.
 - Primary binary: `ltengine` (Rust/actix-web).
 - API format: LibreTranslate-compatible JSON over HTTP.
 - LLM backend: llama.cpp via the `llama-cpp-2` binding.
@@ -31,12 +31,12 @@ The durable product direction lives in `docs/PROJECT_SPEC.md`. This file disting
 - Remove the HTTP server and browser UI after equivalent direct workflows exist.
 - Reuse the extracted translation core for validation, prompting, inference, formatting, and detection metadata.
 
-Direct document translation, the native GUI, and release-grade portable packaging are not implemented yet.
+The native GUI, long-document slicing, and release-grade portable packaging are not implemented yet.
 
 ## Runtime Contract
 
 - HTTP server binds to `127.0.0.1:5050` by default.
-- `translate` handles direct text or stdin without opening a TCP listener.
+- `translate` handles direct text, stdin, or `.txt` documents without opening a TCP listener.
 - Compatible with LibreTranslate API endpoints.
 - Local inference only - no external API calls.
 - Models downloaded on-demand from HuggingFace or loaded from local path.
@@ -59,7 +59,17 @@ Translate stdin:
 printf 'Hej världen!\n' | ./ltengine translate --source auto --target en --stdin --model-file ./models/model.gguf
 ```
 
-Exactly one of `--text` or `--stdin` is required. `--source` accepts a language code or `auto`; `--target` requires a supported code. `--model` defaults to `gemma3-4b`, while `--model-file` selects a staged local GGUF file. Translated text is written to stdout with a trailing newline. Model-loading diagnostics and actionable input, validation, or inference errors use stderr and a non-zero exit status.
+Exactly one of `--text`, `--stdin`, or `--input` is required. `--source` accepts a language code or `auto`; `--target` requires a supported code. `--model` defaults to `gemma3-4b`, while `--model-file` selects a staged local GGUF file. Translated text is written to stdout with a trailing newline. Model-loading diagnostics and actionable input, validation, or inference errors use stderr and a non-zero exit status.
+
+## Direct Document CLI
+
+```bash
+./ltengine translate --source sv --target en \
+  --input ./source.txt --output ./translated.txt \
+  --model-file ./models/model.gguf
+```
+
+Document mode accepts UTF-8 `.txt` input and requires a `.txt` output path. The default byte limit is 10 MiB; `--max-input-bytes` configures it. Input is read through the shared translation core without applying the server `char_limit` or download store. Leading/trailing whitespace, line endings, and internal model-produced multiline structure are preserved. Existing outputs and input/output aliases are rejected; output is created only after validation and successful inference. A write failure may leave a partial newly created output and reports that explicitly.
 
 Running `ltengine` without a subcommand still starts the temporary HTTP server.
 
@@ -74,7 +84,8 @@ Running `ltengine` without a subcommand still starts the temporary HTTP server.
 ## Key Files
 
 - `ltengine/src/main.rs`: HTTP server setup and request handlers.
-- `ltengine/src/cli.rs`: direct command contract, stdin/text execution, and CLI tests.
+- `ltengine/src/cli.rs`: direct command contract, text/stdin execution, document dispatch, and CLI tests.
+- `ltengine/src/document.rs`: bounded document I/O, path safety, layout preservation, and tests.
 - `ltengine/src/translation.rs`: reusable translation behavior and controlled-engine tests.
 - `ltengine/src/llm.rs`: LLM initialization and inference.
 - `ltengine/src/prompt.rs`: Translation prompt templates.

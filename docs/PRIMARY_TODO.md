@@ -16,10 +16,10 @@ read_when:
 | --- | --- | --- |
 | Translation core | DONE — model-backed translation independent from Actix handlers | Controlled-engine tests preserve language behavior and errors |
 | Text CLI | DONE — arguments and stdin translate without a listener | Translated text on stdout; diagnostics/errors on stderr |
-| Document CLI | Local `.txt` input writes a selected output path | Test Swedish-to-English first |
+| Document CLI | DONE — bounded UTF-8 `.txt` input writes a selected new output path | Swedish-to-English, layout, limits, encoding, and path safety tested |
 | HTTP removal | Actix, API state, and browser assets removed after parity | Remove dependencies last |
 
-Active tasks: TODO 7–8 in `docs/TODO.md`.
+Active task: TODO 8 in `docs/TODO.md`.
 
 ## NOT DONE v0.3 Long Text Quality
 
@@ -54,7 +54,7 @@ Former tasks 11–13 are dispositioned in `docs/ARCHIVE.md`; their reusable conc
 | T480 model decision | Reproducible Gemma 3 4B versus Gemma 4 E4B benchmark selects the default | Compare quality, speed, RAM, and model size |
 | Model coverage | Test and document other useful GGUF models | Record quality and memory tradeoffs |
 | Benchmarks | Reproducible comparison with proprietary translators | Publish methodology and fixtures |
-| CLI mode | Text/stdin shipped; document mode is active TODO 7 | Reuse translation core |
+| CLI mode | Text, stdin, and `.txt` document modes shipped | Reuse translation core |
 | Library mode | Translation core exposed as a Rust library; bindings evaluated | Stabilize Rust API before bindings |
 
 Ordered model migration: TODO 21–24 in `docs/TODO.md`. Existing queue remains: 14 model evaluation; 15 comparative benchmarks; 16 CLI inference; 17 library mode and bindings.

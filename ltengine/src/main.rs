@@ -15,6 +15,7 @@ use actix_multipart::form::tempfile::TempFile;
 
 mod banner;
 mod cli;
+mod document;
 mod error_response;
 mod languages;
 mod llm;

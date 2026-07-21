@@ -1,10 +1,13 @@
 use std::io::{Read, Write};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
 use clap::{ArgGroup, Args as ClapArgs, Parser, Subcommand};
 
 use crate::models::{DEFAULT_MODEL, MODELS};
 use crate::translation::{Inference, TranslationRequest, translate};
+
+const DEFAULT_MAX_DOCUMENT_BYTES: u64 = 10 * 1024 * 1024;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -47,16 +50,16 @@ pub struct Args {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Translate text directly without starting the HTTP server
+    /// Translate text or a .txt document without starting the HTTP server
     Translate(TranslateArgs),
 }
 
 #[derive(ClapArgs, Debug)]
 #[command(group(
-    ArgGroup::new("input")
+    ArgGroup::new("translation_input")
         .required(true)
         .multiple(false)
-        .args(["text", "stdin"])
+        .args(["text", "stdin", "input"])
 ))]
 pub struct TranslateArgs {
     /// Source language code, or auto
@@ -74,6 +77,18 @@ pub struct TranslateArgs {
     /// Read text from standard input
     #[arg(long)]
     pub stdin: bool,
+
+    /// Read a UTF-8 .txt document
+    #[arg(long, requires = "output")]
+    pub input: Option<PathBuf>,
+
+    /// Write a translated .txt document without overwriting an existing file
+    #[arg(long, requires = "input")]
+    pub output: Option<PathBuf>,
+
+    /// Maximum document input size in bytes
+    #[arg(long, default_value_t = DEFAULT_MAX_DOCUMENT_BYTES)]
+    pub max_input_bytes: u64,
 }
 
 pub fn run_translate(
@@ -82,6 +97,17 @@ pub fn run_translate(
     mut stdin: impl Read,
     mut stdout: impl Write,
 ) -> Result<()> {
+    if let (Some(input), Some(output)) = (&args.input, &args.output) {
+        return crate::document::translate_document(
+            input,
+            output,
+            args.max_input_bytes,
+            &args.source,
+            &args.target,
+            inference,
+        );
+    }
+
     let text = if let Some(text) = &args.text {
         text.clone()
     } else {
@@ -287,6 +313,48 @@ mod tests {
 
         assert!(missing.is_err());
         assert!(ambiguous.is_err());
+    }
+
+    #[test]
+    fn requires_document_input_and_output_together() {
+        let missing_output = Args::try_parse_from([
+            "ltengine",
+            "translate",
+            "--source",
+            "sv",
+            "--target",
+            "en",
+            "--input",
+            "source.txt",
+        ]);
+        let missing_input = Args::try_parse_from([
+            "ltengine",
+            "translate",
+            "--source",
+            "sv",
+            "--target",
+            "en",
+            "--output",
+            "translated.txt",
+        ]);
+        let mixed_modes = Args::try_parse_from([
+            "ltengine",
+            "translate",
+            "--source",
+            "sv",
+            "--target",
+            "en",
+            "--text",
+            "Hej.",
+            "--input",
+            "source.txt",
+            "--output",
+            "translated.txt",
+        ]);
+
+        assert!(missing_output.is_err());
+        assert!(missing_input.is_err());
+        assert!(mixed_modes.is_err());
     }
 
     #[test]

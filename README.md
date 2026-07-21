@@ -2,7 +2,7 @@
 
 LTEngine-esc is a portable, offline-first Linux document translator powered by local GGUF language models and [llama.cpp](https://github.com/ggml-org/llama.cpp). The primary validated workflow is Swedish-to-English translation, while other language pairs remain supported.
 
-The application now translates text or stdin directly from the CLI without a listener. The inherited [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)-compatible HTTP server remains temporarily for document parity, then will be removed with the bundled browser UI; see [the project specification](docs/PROJECT_SPEC.md) for the product contract and current-versus-target distinction.
+The application now translates text, stdin, or local `.txt` documents directly from the CLI without a listener. The inherited [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)-compatible HTTP server remains temporarily, then will be removed with the bundled browser UI; see [the project specification](docs/PROJECT_SPEC.md) for the product contract and current-versus-target distinction.
 
 ![Translation](https://github.com/user-attachments/assets/37dd4e20-382b-459d-bcc1-5de3ed4b4c18)
 
@@ -54,7 +54,15 @@ Translate stdin with automatic source detection:
 printf 'Hej världen!\n' | ./target/release/ltengine translate --source auto --target en --stdin --model-file ./models/model.gguf
 ```
 
-Exactly one of `--text` or `--stdin` is required. The translation is the only stdout output; model status and errors use stderr.
+Translate a UTF-8 `.txt` document to a new path:
+
+```bash
+./target/release/ltengine translate --source sv --target en \
+  --input ./documents/source.txt --output ./documents/translated.txt \
+  --model-file ./models/model.gguf
+```
+
+Exactly one of `--text`, `--stdin`, or `--input` is required; document mode also requires `--output`. The default document limit is 10 MiB and can be changed with `--max-input-bytes`. Existing output files are never overwritten. Text/stdin translation is the only stdout output; document output goes to the selected path. Model status and errors use stderr.
 
 To run different LLM models:
 

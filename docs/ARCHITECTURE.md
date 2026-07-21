@@ -9,7 +9,7 @@ read_when:
 
 > LTEngine-esc — portable, offline-first Linux document translation through direct local interfaces.
 
-Current code offers direct text/stdin translation plus the inherited HTTP server. Both use the reusable translation core. The next steps add document CLI/native GUI adapters, then remove Actix and the bundled browser UI.
+Current code offers direct text/stdin/document translation plus the inherited HTTP server. Both use the reusable translation core. The next step removes Actix and the bundled browser UI; later work adds long-document slicing and a native GUI.
 
 ## Stack
 
@@ -24,7 +24,8 @@ Current code offers direct text/stdin translation plus the inherited HTTP server
 | Path | Responsibility |
 | --- | --- |
 | `ltengine/src/main.rs` | Runtime dispatch, actix application, handlers, file store; HTTP removal target |
-| `ltengine/src/cli.rs` | Command parsing, text/stdin input, direct translation output, and CLI tests |
+| `ltengine/src/cli.rs` | Command parsing, text/stdin/document dispatch, direct output, and CLI tests |
+| `ltengine/src/document.rs` | Bounded UTF-8 `.txt` input, safe output creation, layout preservation, and filesystem tests |
 | `ltengine/src/translation.rs` | Interface-independent validation, prompting, inference orchestration, formatting, and detection metadata |
 | `ltengine/src/llm.rs` | llama.cpp model context, serialized inference, token generation |
 | `ltengine/src/models.rs` | Model aliases and local/remote model resolution |
@@ -48,10 +49,10 @@ File translation additionally stores translated bytes in an in-memory UUID-keyed
 
 ## Direct CLI Flow
 
-1. Clap validates `translate`, source/target, model options, and exactly one text/stdin input.
+1. Clap validates `translate`, source/target, model options, and exactly one text/stdin/document input.
 2. The selected GGUF model loads without creating an HTTP server or file store.
-3. `cli::run_translate` reads input and calls the shared translation core.
-4. Translated text goes to stdout; loading diagnostics and actionable failures go to stderr.
+3. `cli::run_translate` reads text/stdin or delegates bounded `.txt` I/O to `document.rs`.
+4. Text goes to stdout; documents go to a selected new path; loading diagnostics and actionable failures go to stderr.
 
 ## Target Interface Flow
 

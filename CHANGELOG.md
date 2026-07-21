@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added direct text and stdin translation through the `translate` CLI subcommand.
+- Added bounded UTF-8 `.txt` translation to a selected non-existing output path.
 - Extracted reusable translation behavior behind a controlled inference boundary.
 - Implemented `/translate_file` endpoint for `.txt` file translation with multipart form upload
 - Added `GET /download/{id}` endpoint for retrieving translated files (1-hour TTL)
