@@ -27,9 +27,3 @@ error.txt
 # OS files
 .DS_Store
 Thumbs.db
-
-# Agent-specific docs (local only)
-/AGENTS.md
-
-# Kilo Code project-specific rules/workflows
-.kilocode/

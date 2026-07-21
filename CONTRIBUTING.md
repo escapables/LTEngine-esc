@@ -15,7 +15,7 @@ Thank you for your interest in contributing! This guide covers how to contribute
 1. Fork and clone the repository:
 ```bash
 git clone https://github.com/escapables/LTEngine-esc.git --recursive
-cd LTEngine
+cd LTEngine-esc
 ```
 
 2. Build the project:

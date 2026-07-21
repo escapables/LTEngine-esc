@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+rc=0
+
+echo "## Docs Validation"
+if (cd "$ROOT" && bin/validate-docs) 2>&1; then echo "PASS"; else echo "FAIL"; rc=1; fi
+
+echo ""
+echo "## LOC Check"
+if (cd "$ROOT" && bin/loc-check) 2>&1; then echo "PASS"; else echo "FAIL"; rc=1; fi
+
+echo ""
+echo "## Rust Format"
+if (cd "$ROOT" && cargo fmt --all --check) 2>&1; then echo "PASS"; else echo "FAIL"; rc=1; fi
+
+echo ""
+echo "## Rust Check"
+if (cd "$ROOT" && cargo check --workspace) 2>&1; then echo "PASS"; else echo "FAIL"; rc=1; fi
+
+exit "$rc"

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WARN_AT="${WARN_AT:-450}"
+FAIL_AT="${FAIL_AT:-700}"
+rc=0
+
+echo "## Largest authored files"
+summary_file="$(mktemp)"
+trap 'rm -f "$summary_file"' EXIT
+
+find "$ROOT" \
+  -path "$ROOT/.git" -prune -o \
+  -path "$ROOT/target" -prune -o \
+  -path "$ROOT/llama-cpp-rs" -prune -o \
+  -path "$ROOT/ltengine/resources/static" -prune -o \
+  -type f \
+  \( -path "$ROOT/bin/*" -o -name '*.md' -o -name '*.rs' -o -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.sh' \) \
+  -print0 |
+  xargs -0 wc -l 2>/dev/null |
+  sort -rn > "$summary_file"
+head -30 "$summary_file"
+
+echo ""
+echo "## LOC threshold"
+while IFS= read -r -d '' file; do
+  lines="$(wc -l < "$file")"
+  rel="${file#"$ROOT/"}"
+  if [ "$lines" -gt "$FAIL_AT" ]; then
+    echo "FAIL $rel has $lines lines (limit $FAIL_AT)"
+    rc=1
+  elif [ "$lines" -gt "$WARN_AT" ]; then
+    echo "WARN $rel has $lines lines (target <500; hard limit $FAIL_AT)"
+  fi
+done < <(
+  find "$ROOT" \
+    -path "$ROOT/.git" -prune -o \
+    -path "$ROOT/target" -prune -o \
+    -path "$ROOT/llama-cpp-rs" -prune -o \
+    -path "$ROOT/ltengine/resources/static" -prune -o \
+    -type f \
+    \( -path "$ROOT/bin/*" -o -name '*.md' -o -name '*.rs' -o -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.sh' \) \
+    -print0
+)
+
+if [ "$rc" -eq 0 ]; then
+  echo "PASS"
+fi
+exit "$rc"
