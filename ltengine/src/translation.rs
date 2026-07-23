@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::languages::{detect_lang, get_language_from_code};
+use crate::languages::get_language_from_code;
 use crate::prompt::PromptBuilder;
 
 pub trait Inference {
@@ -15,15 +15,8 @@ pub struct TranslationRequest<'a> {
 }
 
 #[derive(Debug)]
-pub struct DetectedLanguage {
-    pub code: &'static str,
-    pub confidence: i32,
-}
-
-#[derive(Debug)]
 pub struct Translation {
     pub text: String,
-    pub detected_language: Option<DetectedLanguage>,
 }
 
 #[derive(Debug)]
@@ -81,17 +74,8 @@ pub fn translate(
             .map_err(TranslationError::Inference)?
     };
 
-    let detected_language = (request.source == "auto").then(|| {
-        let detected = detect_lang(request.text);
-        DetectedLanguage {
-            code: detected.language.code,
-            confidence: detected.confidence,
-        }
-    });
-
     Ok(Translation {
         text: improve_formatting(request.text, &translated_text),
-        detected_language,
     })
 }
 
@@ -209,7 +193,6 @@ mod tests {
         .expect("translation should succeed");
 
         assert_eq!(output.text, "Hello world!");
-        assert!(output.detected_language.is_none());
         let prompts = inference.prompts.borrow();
         assert!(prompts[0].1.contains("from Swedish to English"));
         assert!(prompts[0].1.contains("Hej världen!"));
@@ -257,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn auto_source_returns_detected_language() {
+    fn auto_source_delegates_detection_to_the_model() {
         let inference = ControlledInference::returning("This is a translated sentence.");
 
         let output = translate(
@@ -271,10 +254,12 @@ mod tests {
         )
         .expect("translation should succeed");
 
-        let detected = output
-            .detected_language
-            .expect("auto source should include detection metadata");
-        assert_eq!(detected.code, "sv");
+        assert_eq!(output.text, "This is a translated sentence.");
+        assert!(
+            inference.prompts.borrow()[0]
+                .1
+                .contains("Translate the text below to English.")
+        );
     }
 
     #[test]

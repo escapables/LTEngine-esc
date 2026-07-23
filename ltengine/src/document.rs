@@ -105,9 +105,9 @@ mod tests {
     use std::cell::{Cell, RefCell};
     use std::fs;
     use std::path::{Path, PathBuf};
+    use std::sync::atomic::{AtomicU64, Ordering};
 
     use anyhow::{Result, anyhow};
-    use uuid::Uuid;
 
     use super::translate_document;
     use crate::translation::Inference;
@@ -116,7 +116,12 @@ mod tests {
 
     impl TestDirectory {
         fn new() -> Self {
-            let path = std::env::temp_dir().join(format!("ltengine-document-{}", Uuid::new_v4()));
+            static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
+            let path = std::env::temp_dir().join(format!(
+                "ltengine-document-{}-{}",
+                std::process::id(),
+                NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed)
+            ));
             fs::create_dir(&path).expect("test directory should be created");
             Self(path)
         }

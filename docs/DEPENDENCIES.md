@@ -2,7 +2,7 @@
 summary: 'LTEngine dependency roles and update rules.'
 read_when:
   - Adding or updating dependencies.
-  - Changing model download, HTTP, or llama.cpp integration.
+  - Changing model download or llama.cpp integration.
 ---
 
 # Dependencies
@@ -11,19 +11,16 @@ read_when:
 
 | Dependency | Role | Source |
 | --- | --- | --- |
-| actix-web / actix-multipart | HTTP server and multipart parsing | `ltengine/Cargo.toml` |
 | llama-cpp-2 | Local GGUF inference and acceleration backends | `llama-cpp-rs` git submodule |
 | hf-hub | On-demand model download | Cargo registry |
 | clap | CLI parsing | Cargo registry |
-| serde / serde_json | LibreTranslate-compatible request/response data | Cargo registry |
-| whatlang | Current language detection | Cargo registry |
-| uuid | Translated-file download identifiers | Cargo registry |
-| static-files crates | Compile-time embedded frontend | Cargo registry |
+| once_cell | Lazy model and language lookup tables | Cargo registry |
 | encoding_rs | Token byte decoding | Cargo registry |
+| anyhow | Application error context and propagation | Cargo registry |
 
 `Cargo.lock` is the exact resolved source of truth. `Cargo.toml` and `ltengine/Cargo.toml` own declared versions and feature flags.
 
-Actix, multipart, UUID download storage, and static-file crates are inherited HTTP-only dependencies. Remove them after TODO 5–7 provide CLI parity; do not build new behavior on them.
+The workspace root `Cargo.lock` is authoritative. The obsolete nested crate lockfile was removed with the HTTP runtime.
 
 `hf-hub` supports convenient model acquisition but is not part of the offline runtime path. Portable operation uses a staged GGUF file.
 
@@ -49,7 +46,7 @@ The current release artifacts have not yet passed this contract. Measure actual 
 - Health-check new dependencies before addition: maintenance, releases, adoption, license.
 - Prefer existing crates or standard library for small tasks.
 - Keep the llama-cpp submodule revision and Rust binding compatible.
-- Treat HTTP crates and browser assets as temporary migration dependencies.
+- Do not add HTTP, browser, or loopback runtime dependencies.
 - Prefer dependencies that can ship inside the portable artifact without host setup.
 - Review `Cargo.lock` diffs for transitive changes.
 - Record notable dependency decisions or health checks here.

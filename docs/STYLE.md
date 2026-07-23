@@ -55,13 +55,11 @@ Group imports in this order:
 Separate groups with blank lines:
 
 ```rust
-use std::sync::Arc;
+use std::path::PathBuf;
 
-use actix_web::{web, HttpResponse};
-use serde::Deserialize;
+use anyhow::Result;
 
-use crate::llm::LlmEngine;
-use crate::prompt::TranslationPrompt;
+use crate::translation::Inference;
 ```
 
 ## Module Structure
@@ -76,11 +74,11 @@ use crate::prompt::TranslationPrompt;
 - Use `Option<T>` and `Result<T, E>` instead of sentinel values.
 - Leverage Rust's type system to make invalid states unrepresentable.
 
-## Async/Await
+## Blocking Work
 
-- Use `tokio` as the async runtime (via `actix-web`).
-- Prefer `async fn` for IO-bound operations.
-- Use `spawn_blocking` for CPU-intensive tasks that would block the runtime.
+- Keep the CLI synchronous unless concurrency provides measured value.
+- LLM inference is blocking and serialized.
+- Move inference off a future native GUI event loop.
 
 ## Unsafe Code
 
@@ -93,7 +91,7 @@ use crate::prompt::TranslationPrompt;
 ## Testing
 
 - Write unit tests for pure functions.
-- Write integration tests for API endpoints.
+- Write parsing and filesystem tests for CLI boundaries.
 - Use `cargo test` to run all tests.
 - Tests go in `#[cfg(test)]` modules or `tests/` directory.
 

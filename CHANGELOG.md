@@ -12,14 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added direct text and stdin translation through the `translate` CLI subcommand.
 - Added bounded UTF-8 `.txt` translation to a selected non-existing output path.
 - Extracted reusable translation behavior behind a controlled inference boundary.
-- Implemented `/translate_file` endpoint for `.txt` file translation with multipart form upload
-- Added `GET /download/{id}` endpoint for retrieving translated files (1-hour TTL)
-- Added `FileStore` with in-memory storage for translated files
 
 ### Fixed
 
 - Return translation inference failures instead of silently returning the source text.
-- Changed default server host binding from `0.0.0.0` to `127.0.0.1` for Windows compatibility.
 
 ### Added
 
@@ -32,22 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Disabled CI on normal pushes; builds now only run on release publish events.
 - Updated `.gitignore` with project-relevant patterns (Rust artifacts, IDE configs, local docs).
-- Updated dependencies: actix-web 4.12, clap 4.5, serde 1.0.228, serde_json 1.0.149, anyhow 1.0.101.
+- Reduced direct runtime dependencies to the CLI, model acquisition, inference, decoding, and error-handling crates.
 - Removed `build.yml` workflow that was incorrectly triggering on pushes despite being "disabled".
 
 ### Removed
 
 - Removed commented-out code blocks from `llm.rs` and `main.rs`.
 - Removed unused lifetime elision patterns in `llm.rs`.
-
-### Fixed
-
-- Fixed README examples to use `127.0.0.1` instead of `0.0.0.0`.
-- Fixed README port references from `5000` to `5050`.
+- Removed the Actix HTTP runtime, LibreTranslate endpoints, API/download state, browser resources, and HTTP-only dependencies.
+- Removed the unused `whatlang` detection metadata path; `--source auto` now delegates recognition to the model.
 
 ### Changed
 
-- Updated PORTABLE_APP.md with complete API endpoint list (/detect, /frontend/settings).
+- Updated PORTABLE_APP.md for the direct CLI-only runtime.
 - Updated ROADMAP.md with current PRIMARY_TODO progress (5/6 steps).
 - Applied cargo fmt formatting across entire ltengine codebase.
 - Fixed all cargo clippy warnings in ltengine crate.
@@ -56,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added placeholder docs for non-applicable features (elevation, scripting, mislabel-inventory).
 - Added `CODE_OF_CONDUCT.md` with front matter for validation compliance.
-- Updated `PORTABLE_APP.md` to reflect actual host binding behavior.
+- Updated runtime, architecture, dependency, release, and development docs after HTTP removal.
 - Documented GPU backend build requirements (Vulkan SDK, CUDA Toolkit) in PRIMARY_TODO.md.
 - Verified CUDA 13.1 build on Windows with Ninja generator.
 - Verified CUDA runtime works on NVIDIA RTX 3060 (3GB VRAM, 35 layers offloaded).

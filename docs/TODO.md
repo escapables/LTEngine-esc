@@ -9,14 +9,7 @@ read_when: [Starting a session, Looking for the next implementation task.]
 // DONE 5 — reusable translation core with controlled-inference tests and propagated errors.
 // DONE 6 — direct text/stdin CLI with controlled-engine coverage and clean stdout.
 // DONE 7 — bounded UTF-8 `.txt` input writes a safe selected output path with layout preservation.
-
-### 8. Remove HTTP runtime
-Task: Remove the web server after direct CLI text and document parity.
-Scope:
-- Delete Actix handlers/state, static browser resources, and HTTP-only dependencies.
-- Remove host, port, API-key, download-store, and LibreTranslate compatibility behavior.
-Done when:
-- Binary opens no listener; CLI tests, `bin/test-gate`, and updated runtime docs pass.
+// DONE 8 — removed HTTP/API/browser runtime and dependencies; CLI now requires `translate`.
 
 ### 21. Official llama binding
 Task: Port upstream's migration to the official `llama-cpp-2` crate before adding Gemma 4.

@@ -9,8 +9,8 @@ read_when:
 
 ## Current Status
 
-- Inherited local LibreTranslate-compatible server using GGUF language models.
-- Direct text, stdin, and bounded UTF-8 `.txt` translation through the shared core without a listener.
+- CLI-only local GGUF translation with no HTTP server, browser UI, or listener.
+- Direct text, stdin, and bounded UTF-8 `.txt` translation through the shared core.
 - Default Gemma3 4B model; CPU, CUDA, Metal, and Vulkan builds.
 - Safe user-selected document output without overwriting existing files.
 - Portable release acceptance is not implemented yet.
@@ -19,10 +19,10 @@ read_when:
 
 - Translate long documents in bounded paragraph slices with progress and ordered reassembly.
 - Design with `$visual-companion`, then add a native drag-and-drop document UI.
-- Remove Actix, LibreTranslate endpoints, and browser resources now that CLI parity exists.
 - Verify Swedish-to-English translation offline on a clean Linux system.
 - Add sentence splitting for long documents.
 - Improve language detection for short text.
+- Migrate to the upstream-proven official `llama-cpp-2` binding.
 
 ## Later
 

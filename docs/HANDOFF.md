@@ -9,39 +9,42 @@ read_when:
 
 ## Session
 
-2026-07-21. Completed TODO 7 direct `.txt` CLI translation.
+2026-07-23. Completed TODO 8 HTTP runtime removal.
 
 ## Completed
 
-- Added exclusive `--input FILE --output FILE` document mode to the direct `translate` command.
-- Enforced UTF-8 `.txt`, configurable 10 MiB default, same/existing-path refusal, and create-new output.
-- Preserved exact boundary whitespace and line endings; inference/validation failures create no output.
-- Added filesystem/CLI regression coverage and marked TODO 7 complete after subagent review approval.
+- Replaced the server/no-subcommand runtime with required direct `translate` CLI dispatch.
+- Removed Actix handlers/state, LibreTranslate endpoints, file store, browser assets, and build script.
+- Removed HTTP-only and dead detection dependencies; workspace root lockfile is authoritative.
+- Added regressions requiring a subcommand and rejecting removed host/port/limit/API-key flags.
+- Kept `--source auto` as model-directed recognition without unused detection metadata.
+- Synchronized runtime, architecture, dependency, release, setup, roadmap, and product docs.
 
 ## Changed Files
 
-- Runtime/tests: `ltengine/src/cli.rs`, `ltengine/src/document.rs`, `ltengine/src/main.rs`.
-- Tracking/docs: `README.md`, `CHANGELOG.md`, `docs/TODO.md`, `docs/PRIMARY_TODO.md`, `docs/PROJECT_SPEC.md`, `docs/ARCHITECTURE.md`, `docs/PORTABLE_APP.md`, `docs/ROADMAP.md`, `docs/HANDOFF.md`.
+- Runtime/tests: `ltengine/src/main.rs`, `cli.rs`, `document.rs`, `languages.rs`, `translation.rs`, manifest/locks; deleted HTTP modules/resources.
+- Product/runtime docs: `AGENTS.md`, `README.md`, `CHANGELOG.md`, `docs/PROJECT_SPEC.md`, `PORTABLE_APP.md`, `ARCHITECTURE.md`.
+- Workflow/support docs: `docs/DEPENDENCIES.md`, `STYLE.md`, `RELEASING.md`, `linux-dev-setup.md`, `ROADMAP.md`, `PRIMARY_TODO.md`, `TODO.md`, `HANDOFF.md`.
 
 ## Verification Run
 
-- Document tests -> expected RED at stub; then 8/8 PASS after review regression.
-- CLI tests -> PASS; 8/8 tests.
-- `cargo test -p ltengine --bin ltengine` -> PASS; 24/24 tests after review fixes.
-- `bin/verify-fast` -> PASS before marking TODO 7 done.
-- `$code-review-and-quality` subagent re-review -> APPROVED; no blocking findings.
-- `bin/test-gate` -> PASS; 4 binding tests, 24 LTEngine tests, and 71 doc tests passed; 2 doc tests ignored.
-- Existing LTEngine and pinned-binding warnings remain non-fatal.
+- CLI removal regressions -> expected RED before runtime removal; PASS afterward.
+- `cargo test -p ltengine --bin ltengine` -> PASS; 26/26 tests.
+- `cargo clippy -p ltengine --all-targets --no-deps` -> PASS with existing binding/LLM warnings.
+- Help smoke, source/dependency scans, Cargo graph, and `git diff --check` -> PASS.
+- `$code-review-and-quality` subagent -> code/docs findings fixed; final re-review APPROVED.
+- `bin/verify-fast` -> PASS; TODO 8 marked done afterward.
+- `bin/test-gate` -> PASS; 4 binding tests, 26 LTEngine tests, and 71 doc tests passed; 2 doc tests ignored.
+- Existing pinned-binding and LTEngine deprecation warnings remain non-fatal.
 
 ## Open Risks / Blockers
 
-- Legacy Actix remains the default/no-subcommand mode; CLI parity now permits TODO 8 removal.
-- CLI runtime still needs a staged local model for offline operation; clean-host acceptance remains unverified.
-- Current `/translate_file` limitations are preserved in `docs/ARCHIVE.md`; do not harden the endpoint instead of replacing it.
+- No staged GGUF available in-session; clean-host, network-disabled Swedish document acceptance remains unverified.
 - Whole-document inference remains model-context limited until paragraph slicing task 29.
+- Portable artifact layout and runtime linkage remain unverified.
 
 ## Next Actions
 
-- Implement TODO 8: remove HTTP runtime, API state, dependencies, and browser resources.
-- Prove the binary opens no listener and keep all direct CLI paths green.
-- Then continue ordered model migration TODO 21–24.
+- Continue TODO 21 official `llama-cpp-2` binding migration.
+- Then port Gemma 4 support and benchmark both models on the target T480.
+- Keep clean-host offline acceptance queued until a staged GGUF and target host are available.

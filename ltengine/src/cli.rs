@@ -13,19 +13,7 @@ const DEFAULT_MAX_DOCUMENT_BYTES: u64 = 10 * 1024 * 1024;
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Option<Command>,
-
-    /// Hostname to bind to in legacy server mode
-    #[arg(long, default_value = "127.0.0.1")]
-    pub host: String,
-
-    /// Port to bind to in legacy server mode
-    #[arg(short, long, default_value_t = 5050)]
-    pub port: u16,
-
-    /// Character limit for legacy server translation requests
-    #[arg(long, default_value_t = 5000)]
-    pub char_limit: usize,
+    pub command: Command,
 
     /// Model to use
     #[arg(short='m', long, value_parser = MODELS.keys().collect::<Vec<_>>(), default_value = DEFAULT_MODEL, global = true)]
@@ -34,10 +22,6 @@ pub struct Args {
     /// Path to a local GGUF model
     #[arg(long, default_value = "", global = true)]
     pub model_file: String,
-
-    /// Set an API key in legacy server mode
-    #[arg(long, default_value = "")]
-    pub api_key: String,
 
     /// Use CPU only
     #[arg(long, global = true)]
@@ -50,7 +34,7 @@ pub struct Args {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Translate text or a .txt document without starting the HTTP server
+    /// Translate text or a .txt document
     Translate(TranslateArgs),
 }
 
@@ -179,7 +163,7 @@ mod tests {
     }
 
     fn translate_args(args: &Args) -> &TranslateArgs {
-        match args.command.as_ref().expect("command must be present") {
+        match &args.command {
             Command::Translate(args) => args,
         }
     }
@@ -242,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn translates_auto_detected_stdin() {
+    fn translates_auto_source_stdin() {
         let args = Args::try_parse_from([
             "ltengine",
             "translate",
@@ -313,6 +297,36 @@ mod tests {
 
         assert!(missing.is_err());
         assert!(ambiguous.is_err());
+    }
+
+    #[test]
+    fn requires_translation_subcommand() {
+        assert!(Args::try_parse_from(["ltengine"]).is_err());
+    }
+
+    #[test]
+    fn rejects_removed_server_flags() {
+        for (flag, value) in [
+            ("--host", "127.0.0.1"),
+            ("--port", "5050"),
+            ("--char-limit", "5000"),
+            ("--api-key", "secret"),
+        ] {
+            let parsed = Args::try_parse_from([
+                "ltengine",
+                flag,
+                value,
+                "translate",
+                "--source",
+                "sv",
+                "--target",
+                "en",
+                "--text",
+                "Hej.",
+            ]);
+
+            assert!(parsed.is_err(), "{flag} must not remain in the CLI");
+        }
     }
 
     #[test]

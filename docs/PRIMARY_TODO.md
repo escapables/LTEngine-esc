@@ -10,16 +10,16 @@ read_when:
 
 > Target: portable offline Linux document translation through direct CLI/native GUI interfaces and local GGUF inference.
 
-## NOT DONE v0.2 Portable CLI
+## DONE v0.2 Portable CLI
 
 | What | Result | Coding tips |
 | --- | --- | --- |
 | Translation core | DONE — model-backed translation independent from Actix handlers | Controlled-engine tests preserve language behavior and errors |
 | Text CLI | DONE — arguments and stdin translate without a listener | Translated text on stdout; diagnostics/errors on stderr |
 | Document CLI | DONE — bounded UTF-8 `.txt` input writes a selected new output path | Swedish-to-English, layout, limits, encoding, and path safety tested |
-| HTTP removal | Actix, API state, and browser assets removed after parity | Remove dependencies last |
+| HTTP removal | DONE — Actix, API state, browser assets, and HTTP-only dependencies removed after parity | CLI requires `translate`; no listener path remains |
 
-Active task: TODO 8 in `docs/TODO.md`.
+Completed through TODO 8. Active implementation continues with TODO 21 in `docs/TODO.md`.
 
 ## NOT DONE v0.3 Long Text Quality
 
@@ -27,7 +27,7 @@ Active task: TODO 8 in `docs/TODO.md`.
 | --- | --- | --- |
 | Sentence splitting | Long text split, translated, and reassembled safely | Preserve paragraph structure |
 | Document slicing (29) | Documents around 20,000 words translate sequentially by paragraph; oversized paragraphs split safely | Budget by tokens; preserve order and separators; expose progress/errors |
-| Short-text detection | Better short-text language detection, evaluating a LexiLang port | Benchmark before replacing whatlang |
+| Short-text detection | Better short-text language detection, evaluating a LexiLang port | Benchmark against model-directed `auto` before adding a detector |
 
 Queued: 9 sentence splitting; 10 short-text language detection; 29 paragraph-sliced long-document pipeline.
 

@@ -36,13 +36,14 @@ cargo build --release --features vulkan   # Vulkan-compatible GPU
 ## Run
 
 ```bash
-./target/release/ltengine
+./target/release/ltengine --help
 ```
 
 To run with a specific model:
 
 ```bash
-./target/release/ltengine -m gemma3-4b [--model-file /path/to/model.gguf]
+./target/release/ltengine translate --source sv --target en --text 'Hej' \
+  -m gemma3-4b [--model-file /path/to/model.gguf]
 ```
 
 ## Development Tips
@@ -54,15 +55,14 @@ To run with a specific model:
 
 ## Expected First-Run Behavior
 
-On first run, the server will:
+On the first translation without `--model-file`, the CLI will:
 1. Download the default Gemma3 4B model (several GB) from HuggingFace
 2. Load the model into memory (this may take 30-60 seconds)
-3. Start the HTTP server on `127.0.0.1:5050`
+3. Translate the selected text or document and exit
 
 Expected output:
 ```
 Loading model gemma-3-4b-it-q4_0.gguf...
-Server running on http://127.0.0.1:5050
 ```
 
 ## Troubleshooting
@@ -85,11 +85,12 @@ Server running on http://127.0.0.1:5050
 
 - **"Out of memory" error**: Use a smaller model:
   ```bash
-  ./target/release/ltengine -m gemma3-4b  # or gemma3-1b
+  ./target/release/ltengine translate --source sv --target en \
+    --text 'Hej' -m gemma3-1b
   ```
 
-- **Server won't start / port in use**: Check if another instance is running:
+- **Missing subcommand**: Inspect the direct CLI and choose an input mode:
   ```bash
-  lsof -i :5050
-  kill $(lsof -t -i:5050)  # Stop existing process
+  ./target/release/ltengine --help
+  ./target/release/ltengine translate --help
   ```

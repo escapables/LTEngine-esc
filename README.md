@@ -2,7 +2,7 @@
 
 LTEngine-esc is a portable, offline-first Linux document translator powered by local GGUF language models and [llama.cpp](https://github.com/ggml-org/llama.cpp). The primary validated workflow is Swedish-to-English translation, while other language pairs remain supported.
 
-The application now translates text, stdin, or local `.txt` documents directly from the CLI without a listener. The inherited [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)-compatible HTTP server remains temporarily, then will be removed with the bundled browser UI; see [the project specification](docs/PROJECT_SPEC.md) for the product contract and current-versus-target distinction.
+The application translates text, stdin, or local `.txt` documents directly from the CLI. It has no HTTP server, browser UI, or loopback listener; see [the project specification](docs/PROJECT_SPEC.md) for the product contract.
 
 ![Translation](https://github.com/user-attachments/assets/37dd4e20-382b-459d-bcc1-5de3ed4b4c18)
 
@@ -36,11 +36,7 @@ cargo build --release
 
 ## Run
 
-```bash
-./target/release/ltengine
-```
-
-With no subcommand, this starts the temporary local server at `http://127.0.0.1:5050`.
+Running without a subcommand prints an error and usage. Use the required `translate` subcommand:
 
 Translate Swedish text directly to English:
 
@@ -48,7 +44,7 @@ Translate Swedish text directly to English:
 ./target/release/ltengine translate --source sv --target en --text 'Hej världen!' --model-file ./models/model.gguf
 ```
 
-Translate stdin with automatic source detection:
+Translate stdin while delegating source-language recognition to the model:
 
 ```bash
 printf 'Hej världen!\n' | ./target/release/ltengine translate --source auto --target en --stdin --model-file ./models/model.gguf
@@ -67,13 +63,16 @@ Exactly one of `--text`, `--stdin`, or `--input` is required; document mode also
 To run different LLM models:
 
 ```bash
-./target/release/ltengine -m gemma3-4b [--model-file /path/to/model.gguf]
+./target/release/ltengine translate --source sv --target en --text 'Hej' \
+  -m gemma3-4b [--model-file /path/to/model.gguf]
 ```
 
 For offline operation, stage the GGUF model before disconnecting and pass its local path:
 
 ```bash
-./target/release/ltengine --model-file ./models/model.gguf
+./target/release/ltengine translate --source sv --target en \
+  --input ./documents/source.txt --output ./documents/translated.txt \
+  --model-file ./models/model.gguf
 ```
 
 Inference remains local and makes no external translation API calls. Without `--model-file`, first use may download a model from Hugging Face.
@@ -90,83 +89,6 @@ LTEngine supports any GGUF language model supported by [llama.cpp](https://githu
 | gemma3-27b | 16G       | 18G       | Best translation quality, slowest   |                    |
 
 Memory usage numbers are approximate.
-
-### Simple
-
-Request:
-
-```javascript
-const res = await fetch("http://127.0.0.1:5050/translate", {
-  method: "POST",
-  body: JSON.stringify({
-    q: "Hello!",
-    source: "en",
-    target: "es",
-  }),
-  headers: { "Content-Type": "application/json" },
-});
-
-console.log(await res.json());
-```
-
-Response:
-
-```javascript
-{
-    "translatedText": "¡Hola!"
-}
-```
-
-List of language codes: http://127.0.0.1:5050/languages
-
-### Auto Detect Language
-
-Request:
-
-```javascript
-const res = await fetch("http://127.0.0.1:5050/translate", {
-  method: "POST",
-  body: JSON.stringify({
-    q: "Ciao!",
-    source: "auto",
-    target: "en",
-  }),
-  headers: { "Content-Type": "application/json" },
-});
-
-console.log(await res.json());
-```
-
-Response:
-
-```javascript
-{
-    "detectedLanguage": {
-        "confidence": 83,
-        "language": "it"
-    },
-    "translatedText": "Bye!"
-}
-```
-
-## Language Bindings
-
-You can use the LTEngine API using the following bindings:
-
-- Rust: <https://github.com/DefunctLizard/libretranslate-rs>
-- Node.js: <https://github.com/franciscop/translate>
-- TypeScript: <https://github.com/tderflinger/libretranslate-ts>
-- .Net: <https://github.com/sigaloid/LibreTranslate.Net>
-- Go: <https://github.com/SnakeSel/libretranslate>
-- Python: <https://github.com/argosopentech/LibreTranslate-py>
-- PHP: <https://github.com/jefs42/libretranslate>
-- C++: <https://github.com/argosopentech/LibreTranslate-cpp>
-- Swift: <https://github.com/wacumov/libretranslate>
-- Unix: <https://github.com/argosopentech/LibreTranslate-sh>
-- Shell: <https://github.com/Hayao0819/Hayao-Tools/tree/master/libretranslate-sh>
-- Java: <https://github.com/suuft/libretranslate-java>
-- Ruby: <https://github.com/noesya/libretranslate>
-- R: <https://github.com/myanesp/libretranslateR>
 
 ## Roadmap
 

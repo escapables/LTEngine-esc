@@ -26,9 +26,8 @@ LTEngine-esc is a portable, offline-first Linux document translator. Its primary
 - Direct CLI: text, stdin, and scripted document translation.
 - Native Linux GUI: drag-and-drop document input, language selection, progress, translated preview, and save-as.
 - Reusable Rust interfaces may be extracted where they simplify the CLI, native GUI, and testing.
-- The existing LibreTranslate-compatible localhost server and browser UI are legacy code to remove after CLI parity.
 
-The current release retains the server as its no-subcommand default but now ships direct text, stdin, and `.txt` document translation. Server removal and portable packaging remain roadmap work.
+The current runtime is CLI-only and ships direct text, stdin, and `.txt` document translation. The native GUI, long-document slicing, and release-grade portable packaging remain roadmap work.
 
 ## Portability Standard
 
@@ -55,5 +54,5 @@ Build tools such as Rust, CMake, clang, and a C++ compiler are development depen
 
 - Cloud-hosted inference or required external services.
 - Restricting translation to Swedish and English.
-- Running or maintaining an HTTP API, web server, or browser-based UI long term.
+- Running or maintaining an HTTP API, web server, or browser-based UI.
 - Bundling every supported model into every release artifact.

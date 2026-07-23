@@ -1,65 +1,55 @@
 ---
-summary: 'Source of truth for LTEngine runtime contract and API behavior.'
+summary: 'Source of truth for LTEngine runtime and direct CLI behavior.'
 read_when:
-  - Changing server runtime behavior.
   - Changing direct CLI or offline packaging behavior.
-  - Updating API endpoints.
-  - Modifying model loading behavior.
+  - Modifying model loading or translation behavior.
+  - Verifying removed HTTP behavior stays removed.
 ---
 
 # LTEngine Runtime Reference
 
-This document is the repository-owned source of truth for the LTEngine runtime.
-
-The durable product direction lives in `docs/PROJECT_SPEC.md`. This file distinguishes shipped behavior from the portable target.
+This document is the repository-owned source of truth for shipped LTEngine runtime behavior. The durable product direction lives in `docs/PROJECT_SPEC.md`.
 
 ## Scope
 
-- Current application: direct text/stdin/`.txt` CLI plus a legacy local HTTP API server.
-- Primary binary: `ltengine` (Rust/actix-web).
-- API format: LibreTranslate-compatible JSON over HTTP.
-- LLM backend: llama.cpp via the `llama-cpp-2` binding.
-- Model format: GGUF (default: Gemma3 family from HuggingFace).
-- Primary validation pair: Swedish to English; supported languages remain broader.
+- Current application: direct text, stdin, and UTF-8 `.txt` translation through a required CLI subcommand.
+- Primary binary: `ltengine` (Rust).
+- LLM backend: llama.cpp through the `llama-cpp-2` binding.
+- Model format: GGUF; `gemma3-4b` is the default alias.
+- Primary validation pair: Swedish to English; supported language pairs remain broader.
+- Removed surface: HTTP server, LibreTranslate endpoints, API/download state, and browser UI.
 
-## Portable Target
-
-- Run from an unpacked Linux directory with no project-specific installation.
-- Translate text, stdin, and documents directly through the CLI without opening a TCP listener.
-- Offer a native drag-and-drop GUI that calls the same Rust core without a web server or browser bridge.
-- Load a staged local GGUF model and require no network or external service at runtime.
-- Remove the HTTP server and browser UI after equivalent direct workflows exist.
-- Reuse the extracted translation core for validation, prompting, inference, formatting, and detection metadata.
-
-The native GUI, long-document slicing, and release-grade portable packaging are not implemented yet.
+The native GUI, long-document slicing, clean-host offline acceptance, and release-grade portable packaging are not implemented yet.
 
 ## Runtime Contract
 
-- HTTP server binds to `127.0.0.1:5050` by default.
-- `translate` handles direct text, stdin, or `.txt` documents without opening a TCP listener.
-- Compatible with LibreTranslate API endpoints.
-- Local inference only - no external API calls.
-- Models downloaded on-demand from HuggingFace or loaded from local path.
+- `translate` handles text, stdin, or `.txt` documents without opening a TCP listener.
+- Running without a subcommand fails with CLI usage; it does not load a model or start a server.
+- The binary exposes no HTTP or LibreTranslate-compatible API.
+- Inference is local; no external translation API is called.
+- Models load from `--model-file` or are acquired on demand through the selected model alias.
 
-For an offline run, supply a model already present on disk with `--model-file`; automatic model retrieval is not offline-safe.
-
-If this contract changes, update this file first.
+For offline use, stage a compatible GGUF file and pass `--model-file`. Automatic model retrieval is not offline-safe.
 
 ## Direct Text CLI
 
 Translate an argument:
 
 ```bash
-./ltengine translate --source sv --target en --text 'Hej världen!' --model-file ./models/model.gguf
+./ltengine translate --source sv --target en \
+  --text 'Hej världen!' --model-file ./models/model.gguf
 ```
 
 Translate stdin:
 
 ```bash
-printf 'Hej världen!\n' | ./ltengine translate --source auto --target en --stdin --model-file ./models/model.gguf
+printf 'Hej världen!\n' | ./ltengine translate \
+  --source auto --target en --stdin --model-file ./models/model.gguf
 ```
 
-Exactly one of `--text`, `--stdin`, or `--input` is required. `--source` accepts a language code or `auto`; `--target` requires a supported code. `--model` defaults to `gemma3-4b`, while `--model-file` selects a staged local GGUF file. Translated text is written to stdout with a trailing newline. Model-loading diagnostics and actionable input, validation, or inference errors use stderr and a non-zero exit status.
+Exactly one of `--text`, `--stdin`, or `--input` is required. `--source` accepts a supported language code or `auto`; `--target` requires a supported code. With `auto`, source recognition is delegated to the model and no detection metadata is emitted.
+
+Translated text is written to stdout with a trailing newline. Model-loading diagnostics and actionable input, validation, or inference errors use stderr and a non-zero exit status.
 
 ## Direct Document CLI
 
@@ -69,75 +59,46 @@ Exactly one of `--text`, `--stdin`, or `--input` is required. `--source` accepts
   --model-file ./models/model.gguf
 ```
 
-Document mode accepts UTF-8 `.txt` input and requires a `.txt` output path. The default byte limit is 10 MiB; `--max-input-bytes` configures it. Input is read through the shared translation core without applying the server `char_limit` or download store. Leading/trailing whitespace, line endings, and internal model-produced multiline structure are preserved. Existing outputs and input/output aliases are rejected; output is created only after validation and successful inference. A write failure may leave a partial newly created output and reports that explicitly.
+Document mode accepts UTF-8 `.txt` input and requires a `.txt` output path. The default byte limit is 10 MiB; `--max-input-bytes` configures it. Leading/trailing whitespace, line endings, and internal model-produced multiline structure are preserved. Existing outputs and input/output aliases are rejected. Output is created only after input validation and successful inference. A write failure may leave a partial newly created output and reports that explicitly.
 
-Running `ltengine` without a subcommand still starts the temporary HTTP server.
+Whole-document inference remains limited by the model context until paragraph slicing is implemented.
 
-## Architecture
+## Runtime Flow
 
-1. Client sends HTTP POST to `/translate` with JSON body.
-2. actix-web handler receives request and validates interface-specific limits in `main.rs`.
-3. `translation.rs` validates languages/format, builds the prompt, calls inference, and formats output.
-4. `llm.rs` manages the LLM context and token generation behind the core's `Inference` boundary.
-5. Response returns JSON with `translatedText` and optional detection metadata.
+1. Clap validates the required `translate` subcommand, model options, required source/target arguments, and exclusive input mode.
+2. `models.rs` resolves a staged GGUF path or downloads the selected alias.
+3. `llm.rs` initializes local llama.cpp inference.
+4. `cli.rs` reads text/stdin or delegates bounded document I/O to `document.rs`.
+5. `translation.rs` validates the supplied language codes and format, builds the prompt, calls inference, and formats output.
 
 ## Key Files
 
-- `ltengine/src/main.rs`: HTTP server setup and request handlers.
-- `ltengine/src/cli.rs`: direct command contract, text/stdin execution, document dispatch, and CLI tests.
+- `ltengine/src/main.rs`: CLI bootstrap and model initialization.
+- `ltengine/src/cli.rs`: command contract, text/stdin execution, document dispatch, and CLI tests.
 - `ltengine/src/document.rs`: bounded document I/O, path safety, layout preservation, and tests.
 - `ltengine/src/translation.rs`: reusable translation behavior and controlled-engine tests.
 - `ltengine/src/llm.rs`: LLM initialization and inference.
-- `ltengine/src/prompt.rs`: Translation prompt templates.
-- `ltengine/src/languages.rs`: Supported language codes.
-- `ltengine/src/models.rs`: Model configuration and download.
-- `ltengine/Cargo.toml`: Dependencies and features (cuda, metal, vulkan).
-
-## Supported API Surface
-
-The server currently supports:
-
-- `POST /translate` - Translate text
-  - Request: `{"q": "Hello", "source": "en", "target": "es"}`
-  - Response: `{"translatedText": "¡Hola!"}`
-  - Supports `source: "auto"` for auto-detection
-  - Returns `detectedLanguage` when source is "auto"
-  - Returns HTTP 500 when model inference fails; source text is not returned as a false translation
-- `POST /detect` - Detect language of text
-  - Request: `{"q": "Hello world"}`
-  - Response: `[{"language": "en", "confidence": 99}]`
-- `GET /languages` - List supported languages
-- `GET /frontend/settings` - Frontend configuration
-- `POST /translate_file` - Document translation
-  - Request: Multipart form with `file`, `source`, `target`, and optional `format` fields
-  - Supported formats: `.txt` (text files only, initially)
-  - Current limits: 10 MiB upload size and the server `char_limit` for decoded text
-  - Current errors use 400 for invalid type, oversize input, invalid UTF-8, or missing fields
-  - Current limitation: the multipart form does not accept `api_key`
-  - Response: `{"translatedFileUrl": "/download/{uuid}"}`
-  - Intended download TTL: 1 hour
-  - Current limitation: cleanup is not called, so downloads remain until process exit
-- `GET /download/{id}` - Download translated file
-  - Response: Binary file download
-  - Current lifetime: until server process exit
-
-**Not implemented (return 501):**
-- `POST /suggest` - Translation suggestions
+- `ltengine/src/prompt.rs`: translation prompt templates.
+- `ltengine/src/languages.rs`: supported language-code mapping.
+- `ltengine/src/models.rs`: model aliases and local/remote model resolution.
+- `ltengine/Cargo.toml`: dependencies and acceleration features.
 
 ## Model Configuration
 
-Models are specified via command line:
+Model options are global and may appear before or after `translate`:
 
 ```bash
-./ltengine -m gemma3-4b          # Use the default Gemma3 4B
-./ltengine --model-file /path/to/model.gguf  # Use custom model
+./ltengine translate --source sv --target en --text 'Hej' -m gemma3-4b
+./ltengine translate --source sv --target en --text 'Hej' \
+  --model-file ./models/model.gguf
 ```
 
-Supported model aliases:
-- `gemma3-1b` - 1GB RAM / 2GB VRAM (testing only)
-- `gemma3-4b` - 4GB RAM / 4GB VRAM (default)
-- `gemma3-12b` - 8GB RAM / 10GB VRAM
-- `gemma3-27b` - 16GB RAM / 18GB VRAM (best quality)
+Supported aliases:
+
+- `gemma3-1b` - 1 GB RAM / 2 GB VRAM (testing only)
+- `gemma3-4b` - 4 GB RAM / 4 GB VRAM (default)
+- `gemma3-12b` - 8 GB RAM / 10 GB VRAM
+- `gemma3-27b` - 16 GB RAM / 18 GB VRAM (best quality)
 
 ## Build
 
@@ -147,58 +108,49 @@ cd LTEngine-esc
 cargo build --release
 ```
 
-## Run
+Acceleration features: `cuda`, `metal`, and `vulkan`.
 
-```bash
-./target/release/ltengine
-# Or with specific model
-./target/release/ltengine -m gemma3-4b
-```
-
-## Hardware Acceleration
-
-Feature flags for build:
-- `cuda` - NVIDIA CUDA support
-- `metal` - Apple Metal support (macOS)
-- `vulkan` - Vulkan support
-
-Example:
 ```bash
 cargo build --release --features cuda
 ```
 
 ## Troubleshooting
 
-- "Out of memory": Use a smaller model (gemma3-1b or gemma3-4b).
-- "Model download failed": Check internet connection or use `--model-file` with local GGUF.
-- Slow inference: Enable hardware acceleration feature (cuda/metal/vulkan).
+- "Out of memory": use a smaller model such as `gemma3-1b` or `gemma3-4b`.
+- "Model download failed": check connectivity or pass a staged GGUF with `--model-file`.
+- Slow inference: enable an available acceleration feature.
+- Missing command: run `./ltengine --help`, then use `./ltengine translate ...`.
 
 ## Change Playbooks
 
-### Add a new API endpoint
+### Change CLI behavior
 
-1. Add route handler in `main.rs`.
-2. Add request/response types using serde.
-3. Add tests for the new endpoint.
+1. Update Clap arguments in `src/cli.rs`.
+2. Add parsing and controlled-inference regressions.
+3. Keep stdout limited to translated text and stderr for diagnostics/errors.
+4. Update this file and README examples.
 
-### Add a new model alias
+### Add a model alias
 
 1. Add model configuration in `src/models.rs`.
-2. Update model documentation in `README.md` and this file.
+2. Update model tables in `README.md` and this file.
+3. Add or update the focused model regression.
 
 ## Guardrails
 
-- Do not add HTTP/API features while the server is pending removal.
+- Do not reintroduce HTTP, browser, daemon, or loopback runtime behavior.
 - Keep Swedish-to-English document translation in representative acceptance fixtures.
-- Maintain offline capability: no required external APIs, runtime downloads, or loopback socket for the target primary workflow.
-- Treat build dependencies separately from end-user runtime requirements.
-- Keep this file synchronized with actual shipped behavior.
+- Keep other supported language pairs functional.
+- Treat document content, filenames, and output paths as untrusted.
+- Maintain offline capability through staged local models.
+- Keep build dependencies separate from end-user runtime requirements.
 
 ## Freshness Checklist
 
-Update this file whenever any of the following changes:
+Update this file when changing:
 
-- API endpoint coverage in `main.rs`
-- Model configuration in `models.rs`
-- Build process or feature flags
-- Runtime contract (API compatibility)
+- CLI arguments or stdout/stderr behavior
+- document limits, formats, or path safety
+- model configuration or loading
+- build process or acceleration features
+- runtime network/offline behavior

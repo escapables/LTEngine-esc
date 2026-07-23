@@ -35,7 +35,7 @@ Before release:
 
 ## Portable Linux Gate
 
-Once the direct CLI ships:
+For each portable release candidate:
 
 1. Build the release binary and record dynamic linkage with `ldd` or equivalent.
 2. Stage the binary, licenses, usage example, and a compatible local GGUF model in a clean directory.
@@ -61,9 +61,13 @@ cargo test
 3. Smoke check binary:
 ```bash
 ./target/release/ltengine --help
+printf 'Hej världen!\n' > ./swedish-smoke.txt
+./target/release/ltengine translate --source sv --target en \
+  --input ./swedish-smoke.txt --output ./translated.txt \
+  --model-file ./models/model.gguf
 ```
 
-For the current server-first build, document that this smoke check does not yet prove portable CLI or offline acceptance. After TODO 8, replace it with the CLI translation smoke from the portable Linux gate.
+The help smoke proves command parsing without loading a model. Portable/offline acceptance additionally requires the clean-host, network-disabled translation gate above.
 
 4. Commit release metadata:
 ```bash
